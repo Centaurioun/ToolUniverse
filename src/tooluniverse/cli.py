@@ -734,6 +734,22 @@ def cmd_list(args: argparse.Namespace) -> None:
                 ),
             }
         )
+    # BUG-22A-09: warn when custom mode fields didn't match any tool attribute
+    if (
+        isinstance(result, dict)
+        and result.get("unknown_fields")
+        and not (args.json or args.raw)
+    ):
+        unk = result["unknown_fields"]
+        valid = (
+            "name, description, type, category, parameters, "
+            "return_schema, is_async, test_examples"
+        )
+        print(
+            f"Warning: field(s) {unk!r} not found in any tool.\n"
+            f"  Valid fields include: {valid}",
+            file=sys.stderr,
+        )
     _print_result(result, args, _render_list)
     # BUG-R13B-06: exit 1 when an unknown category was passed.
     if _cat_unknown:

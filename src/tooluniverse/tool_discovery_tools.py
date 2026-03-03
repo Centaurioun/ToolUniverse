@@ -624,6 +624,10 @@ class ListToolsTool(BaseTool):
                     return {"error": ("fields parameter is required for mode='custom'")}
 
                 tools_info = []
+                # BUG-22A-09: track which fields are actually found in at least one tool
+                _field_found_count = {
+                    field: 0 for field in fields if field != "category"
+                }
                 for tool_name, tool in tools:
                     if tool_name:
                         tool_info = {}
@@ -635,7 +639,12 @@ class ListToolsTool(BaseTool):
                                 )
                             elif field in tool:
                                 tool_info[field] = tool[field]
+                                _field_found_count[field] += 1
                         tools_info.append(tool_info)
+                # BUG-22A-09: fields with zero occurrences across all tools are unknown
+                _unknown_fields = [
+                    f for f, cnt in _field_found_count.items() if cnt == 0
+                ]
 
                 # Apply pagination
                 total_count = len(tools_info)
@@ -663,6 +672,8 @@ class ListToolsTool(BaseTool):
                     if (_has_more_custom and limit != 0)
                     else None,
                     "tools": tools_info,
+                    # BUG-22A-09: fields that matched no tool attribute at all
+                    "unknown_fields": _unknown_fields if _unknown_fields else None,
                 }
 
         except Exception as e:

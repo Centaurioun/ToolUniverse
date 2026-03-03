@@ -4570,3 +4570,108 @@ class TestRound22Fixes:
         out, err = capsys.readouterr()
         assert "\\|" in err or r"\|" in err
         assert "alternation" in err.lower() or "literal" in err.lower()
+
+
+class TestBug22A09CustomModeUnknownField:
+    """BUG-22A-09: tu list --mode custom --fields nonexistent returns empty dicts with no warning."""
+
+    # --- unit tests against tool_discovery_tools.py directly ---
+
+    @pytest.mark.unit
+    def test_unknown_field_returns_unknown_fields_key(self, tu):
+        """Unknown field name is reported in 'unknown_fields' list in the return dict."""
+        result = tu.run_one_function(
+            {
+                "name": "list_tools",
+                "arguments": {
+                    "mode": "custom",
+                    "fields": ["nonexistent_xyz"],
+                    "limit": 3,
+                },
+            }
+        )
+        assert isinstance(result, dict)
+        assert "unknown_fields" in result
+        assert "nonexistent_xyz" in result["unknown_fields"]
+
+    @pytest.mark.unit
+    def test_valid_field_has_no_unknown_fields(self, tu):
+        """Valid field names produce no 'unknown_fields' entry (None or absent)."""
+        result = tu.run_one_function(
+            {
+                "name": "list_tools",
+                "arguments": {
+                    "mode": "custom",
+                    "fields": ["name", "description"],
+                    "limit": 3,
+                },
+            }
+        )
+        assert isinstance(result, dict)
+        assert not result.get("unknown_fields")
+
+    @pytest.mark.unit
+    def test_mixed_fields_reports_only_unknown(self, tu):
+        """Mixed valid+invalid fields: only the invalid one appears in unknown_fields."""
+        result = tu.run_one_function(
+            {
+                "name": "list_tools",
+                "arguments": {
+                    "mode": "custom",
+                    "fields": ["name", "bogus_field"],
+                    "limit": 3,
+                },
+            }
+        )
+        assert isinstance(result, dict)
+        unk = result.get("unknown_fields") or []
+        assert "bogus_field" in unk
+        assert "name" not in unk
+
+    # --- CLI integration tests (cmd_list warns to stderr) ---
+
+    @pytest.mark.unit
+    def test_cmd_list_warns_unknown_field_to_stderr(self, tu, capsys):
+        """cmd_list prints a warning to stderr when custom field is not found."""
+        import argparse
+        from tooluniverse.cli import cmd_list
+        import unittest.mock as mock
+
+        args = argparse.Namespace(
+            mode="custom",
+            fields=["totally_missing_field"],
+            categories=None,
+            limit=2,
+            offset=0,
+            raw=False,
+            json=False,
+            group_by_category=False,
+        )
+        with mock.patch("tooluniverse.cli._get_tu", return_value=tu):
+            cmd_list(args)
+        _out, err = capsys.readouterr()
+        assert "totally_missing_field" in err
+        assert "not found" in err.lower()
+
+    @pytest.mark.unit
+    def test_cmd_list_no_warning_in_json_mode(self, tu, capsys):
+        """In --json mode, unknown field warning is NOT printed to stderr."""
+        import argparse
+        from tooluniverse.cli import cmd_list
+        import unittest.mock as mock
+
+        args = argparse.Namespace(
+            mode="custom",
+            fields=["totally_missing_field"],
+            categories=None,
+            limit=2,
+            offset=0,
+            raw=False,
+            json=True,
+            group_by_category=False,
+        )
+        with mock.patch("tooluniverse.cli._get_tu", return_value=tu):
+            cmd_list(args)
+        _out, err = capsys.readouterr()
+        # Warning should NOT appear in stderr when --json is set
+        assert "totally_missing_field" not in err or "not found" not in err.lower()
