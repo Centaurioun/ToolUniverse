@@ -135,6 +135,25 @@ class SYNERGxDBTool(BaseTool):
         "CLOUD": 6,
     }
 
+    # BUG-45A-03: SYNERGxDB stores some drugs under IUPAC/chemical names instead of
+    # common drug names. Map common synonyms to SYNERGxDB stored names.
+    _DRUG_SYNONYMS: Dict[str, str] = {
+        "cisplatin": "diamminedichloroplatinum",
+        "cis-platinum": "diamminedichloroplatinum",
+        "platinol": "diamminedichloroplatinum",
+        "carboplatin": "carboplat",  # DB00958 carboplatin
+        "taxol": "paclitaxel",
+        "taxotere": "docetaxel",
+        "velcade": "bortezomib",
+        "gleevec": "imatinib",
+        "sprycel": "dasatinib",
+        "iressa": "gefitinib",
+        "tarceva": "erlotinib",
+        "herceptin": "trastuzumab",
+        "avastin": "bevacizumab",
+        "rituxan": "rituximab",
+    }
+
     def _resolve_drug_id_by_name(self, name: str) -> Optional[int]:
         """Resolve a drug name to SYNERGxDB integer drug ID via client-side name matching.
 
@@ -146,18 +165,31 @@ class SYNERGxDBTool(BaseTool):
         drugs = result.get("data", [])
         if not isinstance(drugs, list):
             return None
-        name_lower = name.lower()
+        name_lower = name.lower().strip()
+        # BUG-45A-03: check synonym mapping first (e.g., "cisplatin" → "diamminedichloroplatinum")
+        effective_name = self._DRUG_SYNONYMS.get(name_lower, name_lower)
         for drug in drugs:
             drug_name = str(drug.get("drug_name", drug.get("name", ""))).lower()
-            if name_lower == drug_name or name_lower in drug_name:
+            if effective_name == drug_name or effective_name in drug_name:
                 return drug.get("idDrug") or drug.get("drug_id") or drug.get("id")
+        # If synonym lookup failed, try original name
+        if effective_name != name_lower:
+            for drug in drugs:
+                drug_name = str(drug.get("drug_name", drug.get("name", ""))).lower()
+                if name_lower == drug_name or name_lower in drug_name:
+                    return drug.get("idDrug") or drug.get("drug_id") or drug.get("id")
         return None
 
     def _search_combos(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Search drug combination synergy scores."""
         drug_id_1 = arguments.get("drug_id_1")
         drug_id_2 = arguments.get("drug_id_2")
-        sample = arguments.get("sample")
+        # BUG-45B-02: accept tissue_name and tissue as intuitive aliases for sample
+        sample = (
+            arguments.get("sample")
+            or arguments.get("tissue_name")
+            or arguments.get("tissue")
+        )
         dataset = arguments.get("dataset")
         page = arguments.get("page", 1)
         per_page = arguments.get("per_page", 20)

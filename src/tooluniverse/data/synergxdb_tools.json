@@ -46,7 +46,7 @@
             "string",
             "null"
           ],
-          "description": "Cell line ID (integer as string) or tissue name (e.g., 'blood', 'breast', 'lung'). Use SYNERGxDB_list_cell_lines to find valid values."
+          "description": "Cell line ID (integer as string) or tissue name (e.g., 'blood', 'breast', 'lung'). Use SYNERGxDB_list_cell_lines to find valid values. Aliases: tissue_name, tissue."
         },
         "dataset": {
           "type": [

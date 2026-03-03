@@ -119,28 +119,70 @@ class CIViCTool(BaseTool):
         return None
 
     def _get_variants_for_gene_id(
-        self, gene_id: int, limit: int = 200
+        self, gene_id: int, limit: int = 500
     ) -> Dict[str, Any]:
-        """Fetch variants for a given CIViC gene_id via GraphQL."""
-        payload = {
-            # BUG-41A-02: include feature { id name } in variant nodes so callers can
-            # distinguish e.g. KRAS G12C (ID 78) from NRAS G12C (ID 897).
-            # CIViC uses 'feature' (not 'gene') as the field on GeneVariant type.
-            "query": "query GetVariantsByGene($gene_id: Int!, $limit: Int) { gene(id: $gene_id) { id name variants(first: $limit) { nodes { id name ... on GeneVariant { feature { id name } } } } } }",
-            "operationName": "GetVariantsByGene",
-            "variables": {"gene_id": gene_id, "limit": limit},
-        }
+        """Fetch variants for a given CIViC gene_id via GraphQL.
+
+        BUG-45A-01: CIViC API caps variants(first:) at 100 server-side.
+        Use cursor-based pagination to fetch all variants up to `limit`.
+        """
+        # BUG-41A-02: include feature { id name } so callers can distinguish
+        # e.g. KRAS G12C (ID 78) from NRAS G12C (ID 897).
+        PAGINATED_QUERY = (
+            "query GetVariantsByGene($gene_id: Int!, $page_size: Int, $after: String) { "
+            "gene(id: $gene_id) { id name variants(first: $page_size, after: $after) { "
+            "nodes { id name ... on GeneVariant { feature { id name } } } "
+            "pageInfo { hasNextPage endCursor } } } }"
+        )
+        PAGE_SIZE = 100  # CIViC server max per page
+        all_nodes: list = []
+        cursor = None
+        gene_meta: Dict[str, Any] = {}
         try:
-            resp = requests.post(
-                CIVIC_GRAPHQL_URL,
-                json=payload,
-                timeout=30,
-                headers={
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
-            )
-            data = resp.json().get("data", {})
+            while len(all_nodes) < limit:
+                fetch = min(PAGE_SIZE, limit - len(all_nodes))
+                variables: Dict[str, Any] = {
+                    "gene_id": gene_id,
+                    "page_size": fetch,
+                }
+                if cursor:
+                    variables["after"] = cursor
+                resp = requests.post(
+                    CIVIC_GRAPHQL_URL,
+                    json={
+                        "query": PAGINATED_QUERY,
+                        "operationName": "GetVariantsByGene",
+                        "variables": variables,
+                    },
+                    timeout=30,
+                    headers={
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                    },
+                )
+                resp_data = resp.json().get("data", {})
+                gene_data = resp_data.get("gene", {})
+                if not gene_meta:
+                    gene_meta = {
+                        "id": gene_data.get("id"),
+                        "name": gene_data.get("name"),
+                    }
+                variants_block = gene_data.get("variants", {})
+                nodes = variants_block.get("nodes", [])
+                all_nodes.extend(nodes)
+                page_info = variants_block.get("pageInfo", {})
+                if not page_info.get("hasNextPage"):
+                    break
+                cursor = page_info.get("endCursor")
+                if not cursor:
+                    break
+            # Reassemble in the original single-request structure
+            data = {
+                "gene": {
+                    **gene_meta,
+                    "variants": {"nodes": all_nodes[:limit]},
+                }
+            }
             return {
                 "data": data,
                 "metadata": {"source": "CIViC", "format": "GraphQL"},
@@ -170,7 +212,7 @@ class CIViCTool(BaseTool):
                 arguments = dict(arguments)
                 arguments["gene_id"] = gene_id
             return self._get_variants_for_gene_id(
-                arguments["gene_id"], arguments.get("limit", 200)
+                arguments["gene_id"], arguments.get("limit", 500)
             )
 
         # BUG-40B-01: civic_search_evidence_items — warn on unsupported gene/variant params.
@@ -216,7 +258,7 @@ class CIViCTool(BaseTool):
                 # not the pre-filter fetch — otherwise alphabetically early variants may
                 # block clinically important ones (e.g. FLT3 ITD at position >10).
                 user_limit = arguments.get("limit")
-                fetch_limit = 200 if query_term else (user_limit or 200)
+                fetch_limit = 500 if query_term else (user_limit or 500)
                 result = self._get_variants_for_gene_id(gene_id, fetch_limit)
                 # If query also provided, filter returned variants by name client-side
                 if query_term and isinstance(result.get("data"), dict):

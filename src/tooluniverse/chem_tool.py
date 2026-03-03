@@ -207,7 +207,18 @@ class ChEMBLRESTTool(BaseTool):
                 resp.raise_for_status()
                 molecules = resp.json().get("molecules", [])
                 if molecules:
-                    return molecules[0].get("molecule_chembl_id")
+                    mol = molecules[0]
+                    mol_id = mol.get("molecule_chembl_id")
+                    # BUG-45B-07: prefer the parent compound over salt/formulation entries.
+                    # e.g., "dasatinib" resolves to CHEMBL5416410 (salt form) whose
+                    # molecule_hierarchy.parent_chembl_id = CHEMBL1421 (the parent with
+                    # full mechanism records). Always use the parent to ensure mechanism
+                    # and activity data is found.
+                    hierarchy = mol.get("molecule_hierarchy") or {}
+                    parent_id = hierarchy.get("parent_chembl_id")
+                    if parent_id and parent_id != mol_id:
+                        return parent_id
+                    return mol_id
             except Exception:
                 pass
         return None
@@ -230,6 +241,16 @@ class ChEMBLRESTTool(BaseTool):
                     or arguments.get("molecule_chembl_id__exact")
                     or arguments.get("drug_chembl_id__exact")  # BUG-40A-01
                 )
+                # BUG-45A-05: when mol_id came from drug_chembl_id__exact (or other aliases),
+                # it is not yet mapped to drug_chembl_id in arguments, so _build_params
+                # still sends drug_chembl_id__exact=... as a raw API param that /mechanism.json
+                # doesn't recognize — causing all 7568 mechanisms to be returned.
+                # Fix: rebuild params after ensuring drug_chembl_id is set.
+                if mol_id and not arguments.get("drug_chembl_id"):
+                    arguments = dict(arguments)
+                    arguments["drug_chembl_id"] = mol_id
+                    params = self._build_params(arguments)
+
                 if not mol_id:
                     # BUG-42A-01: auto-lookup ChEMBL ID by drug_name if provided
                     drug_name = arguments.get("drug_name")
