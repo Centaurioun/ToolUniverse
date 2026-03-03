@@ -230,7 +230,8 @@ class ClinicalTrialsTool(RESTfulTool):
         return {
             "data": {
                 "studies": studies,
-                "total_count": data.get("totalCount"),
+                # totalCount may be absent from API response; fallback to len(studies)
+                "total_count": data.get("totalCount") or len(studies),
                 "next_page_token": data.get("nextPageToken"),
             },
             "metadata": {"source": "ClinicalTrials.gov API v2", "operation": "search"},

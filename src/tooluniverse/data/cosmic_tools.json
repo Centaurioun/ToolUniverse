@@ -29,7 +29,7 @@
           "enum": [37, 38]
         }
       },
-      "required": ["operation", "terms"]
+      "required": ["terms"]
     },
     "return_schema": {
       "type": "object",
@@ -126,7 +126,7 @@
           "enum": [37, 38]
         }
       },
-      "required": ["operation", "gene"]
+      "required": ["gene"]
     },
     "return_schema": {
       "type": "object",

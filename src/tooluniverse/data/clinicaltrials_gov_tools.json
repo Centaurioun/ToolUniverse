@@ -653,6 +653,14 @@
                     "type": "string",
                     "description": "Drug, biologic, device, or intervention name (e.g., 'nivolumab', 'CRISPR', 'CAR-T cells', 'metformin', 'osimertinib')."
                 },
+                "condition": {
+                    "type": ["string", "null"],
+                    "description": "Disease or condition to filter trials (e.g., 'HER2 breast cancer', 'NSCLC KRAS G12C'). Alias for query_cond."
+                },
+                "status": {
+                    "type": ["string", "null"],
+                    "description": "Recruitment status filter: 'RECRUITING', 'COMPLETED', 'ACTIVE_NOT_RECRUITING', 'TERMINATED'. Alias for filter_status."
+                },
                 "filter_status": {
                     "type": ["string", "null"],
                     "description": "Filter by recruitment status: 'RECRUITING', 'COMPLETED', 'ACTIVE_NOT_RECRUITING', 'TERMINATED'. Comma-separate multiple."

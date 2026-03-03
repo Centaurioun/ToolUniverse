@@ -471,7 +471,12 @@ class CancerPrognosisTool(BaseTool):
                         "name": name,
                         "description": description[:200],
                         "cancer_type_id": cancer_type_id,
-                        "sample_count": s.get("allSampleCount"),
+                        "sample_count": max(
+                            s.get("allSampleCount") or 0,
+                            s.get("sequencedSampleCount") or 0,
+                            s.get("cnaSampleCount") or 0,
+                        )
+                        or None,
                         "reference_pmid": s.get("pmid"),
                     }
                 )
@@ -548,7 +553,12 @@ class CancerPrognosisTool(BaseTool):
                 "name": study_info.get("name"),
                 "description": (study_info.get("description", "") or "")[:500],
                 "cancer_type_id": study_info.get("cancerTypeId"),
-                "sample_count": study_info.get("allSampleCount"),
+                "sample_count": max(
+                    study_info.get("allSampleCount") or 0,
+                    study_info.get("sequencedSampleCount") or 0,
+                    study_info.get("cnaSampleCount") or 0,
+                )
+                or None,
                 "pmid": study_info.get("pmid"),
                 "molecular_profiles": profile_summary,
                 "survival_attributes": [
