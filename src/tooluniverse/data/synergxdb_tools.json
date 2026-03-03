@@ -8,23 +8,37 @@
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["search_combos"],
+          "enum": [
+            "search_combos"
+          ],
           "description": "Operation type"
         },
         "drug_id_1": {
-          "type": ["integer", "null"],
+          "type": [
+            "integer",
+            "null"
+          ],
           "description": "SYNERGxDB drug ID for drug A. Use SYNERGxDB_list_drugs to find IDs. Examples: 11 (Bortezomib), 48 (Imatinib), 52 (Lapatinib)"
         },
         "drug_id_2": {
-          "type": ["integer", "null"],
+          "type": [
+            "integer",
+            "null"
+          ],
           "description": "SYNERGxDB drug ID for drug B. Examples: 97 (Topotecan), 34 (Erlotinib), 24 (Dasatinib)"
         },
         "sample": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "Cell line ID (integer as string) or tissue name (e.g., 'blood', 'breast', 'lung'). Use SYNERGxDB_list_cell_lines to find valid values."
         },
         "dataset": {
-          "type": ["integer", "null"],
+          "type": [
+            "integer",
+            "null"
+          ],
           "description": "Dataset source ID. Key datasets: 2 (NCI-ALMANAC), 1 (MERCK), 10 (STANFORD), 7 (MIT-MELANOMA). Use SYNERGxDB_list_datasets to see all."
         },
         "page": {
@@ -41,24 +55,57 @@
           "description": "Results per page (default: 20, max: 500)"
         }
       },
-      "required": ["operation"]
+      "required": []
     },
     "return_schema": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "comboId": {"type": "integer", "description": "Combination design ID"},
-          "drugNameA": {"type": "string"},
-          "drugNameB": {"type": "string"},
-          "sampleName": {"type": "string", "description": "Cell line name"},
-          "tissue": {"type": "string"},
-          "sourceName": {"type": "string", "description": "Dataset name"},
-          "bliss": {"type": "number", "description": "Bliss independence synergy score"},
-          "loewe": {"type": "number", "description": "Loewe additivity synergy score"},
-          "hsa": {"type": "number", "description": "Highest Single Agent synergy score"},
-          "zip": {"type": "number", "description": "Zero Interaction Potency synergy score"},
-          "comboscore": {"type": ["integer", "null"], "description": "Composite combination score"}
+          "comboId": {
+            "type": "integer",
+            "description": "Combination design ID"
+          },
+          "drugNameA": {
+            "type": "string"
+          },
+          "drugNameB": {
+            "type": "string"
+          },
+          "sampleName": {
+            "type": "string",
+            "description": "Cell line name"
+          },
+          "tissue": {
+            "type": "string"
+          },
+          "sourceName": {
+            "type": "string",
+            "description": "Dataset name"
+          },
+          "bliss": {
+            "type": "number",
+            "description": "Bliss independence synergy score"
+          },
+          "loewe": {
+            "type": "number",
+            "description": "Loewe additivity synergy score"
+          },
+          "hsa": {
+            "type": "number",
+            "description": "Highest Single Agent synergy score"
+          },
+          "zip": {
+            "type": "number",
+            "description": "Zero Interaction Potency synergy score"
+          },
+          "comboscore": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Composite combination score"
+          }
         }
       }
     },
@@ -81,7 +128,9 @@
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["get_combo_matrix"],
+          "enum": [
+            "get_combo_matrix"
+          ],
           "description": "Operation type"
         },
         "combo_id": {
@@ -93,20 +142,44 @@
           "description": "Dataset source ID (idSource field from search_combos or list_datasets)"
         }
       },
-      "required": ["operation", "combo_id", "source_id"]
+      "required": [
+        "combo_id",
+        "source_id"
+      ]
     },
     "return_schema": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "concA": {"type": "number", "description": "Concentration of drug A (Molar)"},
-          "concB": {"type": "number", "description": "Concentration of drug B (Molar)"},
-          "raw_matrix": {"type": "number", "description": "Raw viability (0-1)"},
-          "bliss_matrix": {"type": "number", "description": "Bliss synergy matrix value"},
-          "loewe_matrix": {"type": "number", "description": "Loewe synergy matrix value"},
-          "hsa_matrix": {"type": "number", "description": "HSA synergy matrix value"},
-          "zip_matrix": {"type": "number", "description": "ZIP synergy matrix value"}
+          "concA": {
+            "type": "number",
+            "description": "Concentration of drug A (Molar)"
+          },
+          "concB": {
+            "type": "number",
+            "description": "Concentration of drug B (Molar)"
+          },
+          "raw_matrix": {
+            "type": "number",
+            "description": "Raw viability (0-1)"
+          },
+          "bliss_matrix": {
+            "type": "number",
+            "description": "Bliss synergy matrix value"
+          },
+          "loewe_matrix": {
+            "type": "number",
+            "description": "Loewe synergy matrix value"
+          },
+          "hsa_matrix": {
+            "type": "number",
+            "description": "HSA synergy matrix value"
+          },
+          "zip_matrix": {
+            "type": "number",
+            "description": "ZIP synergy matrix value"
+          }
         }
       }
     },
@@ -127,25 +200,66 @@
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["list_drugs"],
+          "enum": [
+            "list_drugs"
+          ],
           "description": "Operation type"
         }
       },
-      "required": ["operation"]
+      "required": []
     },
     "return_schema": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "idDrug": {"type": "integer", "description": "SYNERGxDB drug ID"},
-          "name": {"type": "string", "description": "Drug name"},
-          "idPubChem": {"type": ["string", "null"], "description": "PubChem compound ID"},
-          "idDrugBank": {"type": ["string", "null"], "description": "DrugBank ID"},
-          "smiles": {"type": ["string", "null"], "description": "SMILES structure"},
-          "inchikey": {"type": ["string", "null"], "description": "InChIKey"},
-          "atcCode": {"type": ["string", "null"], "description": "ATC classification code"},
-          "dataset_names": {"type": "string", "description": "Comma-separated dataset names"}
+          "idDrug": {
+            "type": "integer",
+            "description": "SYNERGxDB drug ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Drug name"
+          },
+          "idPubChem": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "PubChem compound ID"
+          },
+          "idDrugBank": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "DrugBank ID"
+          },
+          "smiles": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "SMILES structure"
+          },
+          "inchikey": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "InChIKey"
+          },
+          "atcCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ATC classification code"
+          },
+          "dataset_names": {
+            "type": "string",
+            "description": "Comma-separated dataset names"
+          }
         }
       }
     },
@@ -164,7 +278,9 @@
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["get_drug"],
+          "enum": [
+            "get_drug"
+          ],
           "description": "Operation type"
         },
         "drug_id": {
@@ -172,16 +288,37 @@
           "description": "SYNERGxDB drug ID (e.g., 11 for Bortezomib)"
         }
       },
-      "required": ["operation", "drug_id"]
+      "required": [
+        "drug_id"
+      ]
     },
     "return_schema": {
       "type": "object",
       "properties": {
-        "idDrug": {"type": "integer"},
-        "name": {"type": "string"},
-        "atcCode": {"type": ["string", "null"]},
-        "idPubChem": {"type": ["string", "null"]},
-        "idDrugBank": {"type": ["string", "null"]}
+        "idDrug": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "atcCode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "idPubChem": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "idDrugBank": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "test_examples": [
@@ -200,25 +337,63 @@
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["list_cell_lines"],
+          "enum": [
+            "list_cell_lines"
+          ],
           "description": "Operation type"
         }
       },
-      "required": ["operation"]
+      "required": []
     },
     "return_schema": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "idSample": {"type": "integer", "description": "Cell line ID"},
-          "name": {"type": "string", "description": "Cell line name"},
-          "tissue": {"type": "string", "description": "Tissue type"},
-          "disease": {"type": ["string", "null"], "description": "Cancer disease type"},
-          "idCellosaurus": {"type": ["string", "null"], "description": "Cellosaurus accession"},
-          "sex": {"type": ["string", "null"]},
-          "age": {"type": ["integer", "null"]},
-          "origin": {"type": ["string", "null"]}
+          "idSample": {
+            "type": "integer",
+            "description": "Cell line ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Cell line name"
+          },
+          "tissue": {
+            "type": "string",
+            "description": "Tissue type"
+          },
+          "disease": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cancer disease type"
+          },
+          "idCellosaurus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cellosaurus accession"
+          },
+          "sex": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "age": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "origin": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       }
     },
@@ -237,24 +412,56 @@
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["list_datasets"],
+          "enum": [
+            "list_datasets"
+          ],
           "description": "Operation type"
         }
       },
-      "required": ["operation"]
+      "required": []
     },
     "return_schema": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "idSource": {"type": "integer", "description": "Dataset ID"},
-          "name": {"type": "string", "description": "Dataset name"},
-          "no_drugs": {"type": "integer", "description": "Number of drugs"},
-          "no_samples": {"type": "integer", "description": "Number of cell lines"},
-          "pmID": {"type": ["string", "null"], "description": "PubMed ID"},
-          "author": {"type": ["string", "null"], "description": "First author et al."},
-          "combo": {"type": ["string", "null"], "description": "Combination matrix design"}
+          "idSource": {
+            "type": "integer",
+            "description": "Dataset ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Dataset name"
+          },
+          "no_drugs": {
+            "type": "integer",
+            "description": "Number of drugs"
+          },
+          "no_samples": {
+            "type": "integer",
+            "description": "Number of cell lines"
+          },
+          "pmID": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "PubMed ID"
+          },
+          "author": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "First author et al."
+          },
+          "combo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Combination matrix design"
+          }
         }
       }
     },
@@ -273,22 +480,38 @@
       "properties": {
         "operation": {
           "type": "string",
-          "enum": ["get_combo_stats"],
+          "enum": [
+            "get_combo_stats"
+          ],
           "description": "Operation type"
         }
       },
-      "required": ["operation"]
+      "required": []
     },
     "return_schema": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "idSource": {"type": "integer"},
-          "name": {"type": "string", "description": "Dataset name"},
-          "nCombos": {"type": "integer", "description": "Number of unique drug combinations"},
-          "nExperiments": {"type": "integer", "description": "Total experiments"},
-          "nDatapoints": {"type": "integer", "description": "Total data points"}
+          "idSource": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string",
+            "description": "Dataset name"
+          },
+          "nCombos": {
+            "type": "integer",
+            "description": "Number of unique drug combinations"
+          },
+          "nExperiments": {
+            "type": "integer",
+            "description": "Total experiments"
+          },
+          "nDatapoints": {
+            "type": "integer",
+            "description": "Total data points"
+          }
         }
       }
     },

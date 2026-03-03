@@ -85,6 +85,9 @@ class ChEMBLRESTTool(BaseTool):
 
         # ChEMBL API uses query parameters for filtering
         # Common parameters: limit, offset, format, ordering
+        # max_results is an alias for limit
+        if "max_results" in args and "limit" not in args:
+            params["limit"] = args["max_results"]
         if "limit" in args:
             params["limit"] = args["limit"]
         if "offset" in args:
@@ -126,8 +129,10 @@ class ChEMBLRESTTool(BaseTool):
 
         # BUG-26B-03/13: Map `q` to `pref_name__icontains` so that intuitive
         # text searches work (ChEMBL uses field__lookup syntax, not q=).
-        # Also map `query` as a natural alias for name-based search.
-        name_query = args.get("q") or args.get("query")
+        # Also map `query` and `pref_name__contains` as aliases.
+        name_query = (
+            args.get("q") or args.get("query") or args.get("pref_name__contains")
+        )
         if name_query is not None:
             params["pref_name__icontains"] = name_query
 
@@ -150,6 +155,8 @@ class ChEMBLRESTTool(BaseTool):
                     "ordering",
                     "q",  # handled above: mapped to pref_name__icontains
                     "query",  # handled above: alias for q
+                    "pref_name__contains",  # handled above: alias for pref_name__icontains
+                    "max_results",  # handled above: alias for limit
                     "chembl_id",
                     "target_chembl_id",
                     "assay_chembl_id",

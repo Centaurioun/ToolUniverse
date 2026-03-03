@@ -72,12 +72,17 @@ class COSMICTool(BaseTool):
 
         max_results = min(arguments.get("max_results", 20), 500)
         genome_build = arguments.get("genome_build", 37)
+        # Request more records than needed to compensate for deduplication:
+        # COSMIC NLM API returns sample-level records (same mutation many times
+        # across different cancer samples). Request up to 20x more to ensure
+        # we get enough unique mutations after dedup. Cap at 500 (API limit).
+        fetch_count = min(max_results * 20, 500)
 
         # Display fields: MutationID, GeneName, MutationCDS, MutationAA
         # Extra fields for more details
         params = {
             "terms": terms,
-            "maxList": max_results,
+            "maxList": fetch_count,
             "grchv": genome_build,
             "df": "MutationID,GeneName,MutationCDS,MutationAA",
             "ef": "MutationID,GeneName,MutationCDS,MutationAA,PrimarySite,PrimaryHistology,MutationGenomePosition,MutationStrand",
@@ -145,6 +150,8 @@ class COSMICTool(BaseTool):
                         "primary_histology": prim_hist,
                     }
                     results.append(result)
+                    if len(results) >= max_results:
+                        break
 
                 return {
                     "status": "success",
@@ -193,10 +200,11 @@ class COSMICTool(BaseTool):
 
         max_results = min(arguments.get("max_results", 100), 500)
         genome_build = arguments.get("genome_build", 37)
+        fetch_count = min(max_results * 20, 500)
 
         params = {
             "terms": gene,
-            "maxList": max_results,
+            "maxList": fetch_count,
             "grchv": genome_build,
             "q": f"GeneName:{gene}",
             "df": "MutationID,GeneName,MutationCDS,MutationAA",
@@ -276,6 +284,8 @@ class COSMICTool(BaseTool):
                         "fathmm_prediction": fathmm,
                     }
                     results.append(result)
+                    if len(results) >= max_results:
+                        break
 
                 return {
                     "status": "success",

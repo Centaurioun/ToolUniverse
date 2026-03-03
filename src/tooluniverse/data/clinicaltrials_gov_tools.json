@@ -791,6 +791,13 @@
                         "null"
                     ],
                     "description": "Recruitment status filter. Alias for filter_status. E.g., \"RECRUITING\", \"COMPLETED\"."
+                },
+                "max_results": {
+                    "type": [
+                        "integer",
+                        "null"
+                    ],
+                    "description": "Maximum number of results to return. Alias for page_size."
                 }
             },
             "required": []

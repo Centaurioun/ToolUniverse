@@ -147,6 +147,16 @@
           "type": "string",
           "description": "Filter by preferred name (contains). Note: `pref_name` coverage is incomplete in ChEMBL, so this can legitimately return zero results even for common names; prefer `molecule_chembl_id` for reliable retrieval."
         },
+        "query": {
+          "type": "string",
+          "description": "Molecule name to search for. Alias for pref_name__contains."
+        },
+        "max_results": {
+          "type": "integer",
+          "description": "Maximum number of results to return. Alias for limit.",
+          "default": 20,
+          "maximum": 1000
+        },
         "molecule_type": {
           "type": "string",
           "description": "Filter by molecule type (e.g., 'Small molecule', 'Antibody')"

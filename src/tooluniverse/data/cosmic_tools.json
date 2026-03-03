@@ -33,7 +33,7 @@
           "enum": [37, 38]
         }
       },
-      "required": ["terms"]
+      "required": []
     },
     "return_schema": {
       "type": "object",
@@ -134,7 +134,7 @@
           "enum": [37, 38]
         }
       },
-      "required": ["gene"]
+      "required": []
     },
     "return_schema": {
       "type": "object",

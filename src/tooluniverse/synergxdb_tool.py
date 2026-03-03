@@ -53,7 +53,20 @@ class SYNERGxDBTool(BaseTool):
         """Execute the SYNERGxDB API tool with given arguments."""
         operation = arguments.get("operation")
         if not operation:
-            return {"status": "error", "error": "Missing required parameter: operation"}
+            # Infer operation from tool config (each tool has a fixed const operation)
+            schema_op = (
+                self.tool_config.get("parameter", {})
+                .get("properties", {})
+                .get("operation", {})
+                .get("enum", [None])[0]
+            )
+            if schema_op:
+                operation = schema_op
+            else:
+                return {
+                    "status": "error",
+                    "error": "Missing required parameter: operation",
+                }
 
         operation_handlers = {
             "search_combos": self._search_combos,

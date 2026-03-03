@@ -33,7 +33,7 @@
       "endpoint": "https://www.guidetopharmacology.org/services/targets",
       "params": {}
     },
-    "type": "BaseRESTTool",
+    "type": "GtoPdbRESTTool",
     "test_examples": [
       {
         "name": "dopamine"
@@ -150,7 +150,7 @@
       "endpoint": "https://www.guidetopharmacology.org/services/ligands",
       "params": {}
     },
-    "type": "BaseRESTTool",
+    "type": "GtoPdbRESTTool",
     "test_examples": [
       {
         "name": "aspirin"
@@ -240,7 +240,14 @@
             "integer",
             "null"
           ],
-          "description": "GtoPdb target ID. Get from GtoPdb_search_targets. Examples: 2486 (dopamine beta-hydroxylase), 20 (5-HT1A receptor)"
+          "description": "GtoPdb target ID. Get from GtoPdb_search_targets. Examples: 2486 (dopamine beta-hydroxylase), 20 (5-HT1A receptor). Alias: target_id also accepted."
+        },
+        "target_id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Alias for targetId. GtoPdb target ID."
         },
         "ligandId": {
           "type": [

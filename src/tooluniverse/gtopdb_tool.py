@@ -25,17 +25,22 @@ class GtoPdbRESTTool(BaseTool):
             and "{targetId}" not in url
             and "{ligandId}" not in url
         ):
-            target_id = args.get("targetId")
-            ligand_id = args.get("ligandId")
+            # Accept both camelCase and snake_case aliases
+            target_id = args.get("targetId") or args.get("target_id")
+            ligand_id = args.get("ligandId") or args.get("ligand_id")
             if target_id is not None:
                 url = f"{self.base_url}/targets/{target_id}/interactions"
                 args = {
-                    k: v for k, v in args.items() if k not in ("targetId", "ligandId")
+                    k: v
+                    for k, v in args.items()
+                    if k not in ("targetId", "target_id", "ligandId", "ligand_id")
                 }
             elif ligand_id is not None:
                 url = f"{self.base_url}/ligands/{ligand_id}/interactions"
                 args = {
-                    k: v for k, v in args.items() if k not in ("targetId", "ligandId")
+                    k: v
+                    for k, v in args.items()
+                    if k not in ("targetId", "target_id", "ligandId", "ligand_id")
                 }
 
         query_params = {}
@@ -104,8 +109,8 @@ class GtoPdbRESTTool(BaseTool):
                 }
             data = response.json()
 
-            # Apply limit if specified
-            limit = arguments.get("limit", 20)
+            # Apply limit if specified (max_results is an alias for limit)
+            limit = arguments.get("limit", arguments.get("max_results", 20))
             if isinstance(data, list) and len(data) > limit:
                 data = data[:limit]
 
