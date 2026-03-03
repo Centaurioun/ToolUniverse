@@ -99,6 +99,21 @@ class GtoPdbRESTTool(BaseTool):
             response = request_with_retry(
                 self.session, "GET", url, timeout=self.timeout, max_attempts=3
             )
+            if response.status_code == 404 and "?" in url:
+                # BUG-37A-02: on search endpoints (URL has query params), 404 means no results
+                # not a real error. Provide helpful guidance.
+                hint = ""
+                if "/targets" in url:
+                    hint = " If searching for a drug/ligand name, use GtoPdb_search_ligands instead."
+                elif "/ligands" in url:
+                    hint = " If searching for a target name, use GtoPdb_search_targets instead."
+                return {
+                    "status": "success",
+                    "data": [],
+                    "count": 0,
+                    "url": url,
+                    "message": f"No results found matching the search criteria.{hint}",
+                }
             if response.status_code != 200:
                 raw_detail = (response.text or "")[:500]
                 # BUG-35A-01: extract human-readable API error from JSON detail

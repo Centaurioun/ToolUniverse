@@ -122,6 +122,19 @@ class SYNERGxDBTool(BaseTool):
                 "detail": response.text[:500],
             }
 
+    # BUG-37A-05: dataset name → ID mapping (from /api/datasets/)
+    _DATASET_NAME_TO_ID = {
+        "NCI-ALMANAC": 2,
+        "MERCK": 1,
+        "MIT-MELANOMA": 7,
+        "VISAGE": 10,
+        "DECREASE": 9,
+        "YALE-TNBC": 5,
+        "YALE-PDAC": 4,
+        "STANFORD": 8,
+        "CLOUD": 6,
+    }
+
     def _search_combos(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Search drug combination synergy scores."""
         drug_id_1 = arguments.get("drug_id_1")
@@ -130,6 +143,19 @@ class SYNERGxDBTool(BaseTool):
         dataset = arguments.get("dataset")
         page = arguments.get("page", 1)
         per_page = arguments.get("per_page", 20)
+
+        # BUG-37A-05: accept dataset as string name and convert to integer ID
+        if dataset is not None and isinstance(dataset, str) and not dataset.isdigit():
+            mapped = self._DATASET_NAME_TO_ID.get(dataset.upper())
+            if mapped is not None:
+                dataset = mapped
+            else:
+                available = ", ".join(self._DATASET_NAME_TO_ID.keys())
+                return {
+                    "status": "error",
+                    "error": f"Unknown dataset name '{dataset}'. Available: {available}. "
+                    "You can also pass the integer dataset ID directly.",
+                }
 
         if not drug_id_1 and not drug_id_2 and not dataset:
             return {

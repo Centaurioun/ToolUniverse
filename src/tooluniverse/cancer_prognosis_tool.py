@@ -206,7 +206,7 @@ class CancerPrognosisTool(BaseTool):
     def _get_survival_data(self, arguments):
         # type: (Dict[str, Any]) -> Dict[str, Any]
         """Retrieve OS and DFS survival clinical data for a study."""
-        cancer = arguments.get("cancer")
+        cancer = arguments.get("cancer") or arguments.get("cancer_type")
         if not cancer:
             return {
                 "status": "error",
@@ -330,7 +330,7 @@ class CancerPrognosisTool(BaseTool):
     def _get_gene_expression(self, arguments):
         # type: (Dict[str, Any]) -> Dict[str, Any]
         """Fetch gene expression values across samples in a study."""
-        cancer = arguments.get("cancer")
+        cancer = arguments.get("cancer") or arguments.get("cancer_type")
         gene = arguments.get("gene")
 
         if not cancer:
@@ -513,7 +513,7 @@ class CancerPrognosisTool(BaseTool):
     def _get_study_summary(self, arguments):
         # type: (Dict[str, Any]) -> Dict[str, Any]
         """Get summary statistics for a cancer study."""
-        cancer = arguments.get("cancer")
+        cancer = arguments.get("cancer") or arguments.get("cancer_type")
         if not cancer:
             return {
                 "status": "error",
