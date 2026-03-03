@@ -262,30 +262,29 @@
   {
     "type": "ChEMBLRESTTool",
     "name": "ChEMBL_get_molecule_targets",
-    "description": "Get all targets associated with a molecule by ChEMBL ID. Returns targets that have activity data for the specified molecule.",
+    "description": "Get all unique targets associated with a molecule by ChEMBL ID. Returns targets that have activity data for the specified molecule (deduplicated from activity records).",
     "fields": {
-      "endpoint": "/target.json"
+      "endpoint": "/activity.json"
     },
     "parameter": {
       "type": "object",
       "properties": {
         "molecule_chembl_id__exact": {
           "type": "string",
-          "description": "ChEMBL molecule ID (e.g., 'CHEMBL25'). To find a molecule ID, use ChEMBL_search_molecules with a molecule name."
+          "description": "ChEMBL molecule ID (e.g., 'CHEMBL25' for aspirin). To find a molecule ID, use ChEMBL_search_molecules. Alias: molecule_chembl_id."
+        },
+        "molecule_chembl_id": {
+          "type": "string",
+          "description": "Alias for molecule_chembl_id__exact. ChEMBL molecule ID."
         },
         "limit": {
           "type": "integer",
-          "default": 20,
-          "maximum": 1000
-        },
-        "offset": {
-          "type": "integer",
-          "default": 0
+          "default": 500,
+          "maximum": 1000,
+          "description": "Maximum number of activity records to fetch for target deduplication (default 500)."
         }
       },
-      "required": [
-        "molecule_chembl_id__exact"
-      ]
+      "required": []
     },
     "return_schema": {
       "type": "object",

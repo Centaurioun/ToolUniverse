@@ -100,12 +100,21 @@ class GtoPdbRESTTool(BaseTool):
                 self.session, "GET", url, timeout=self.timeout, max_attempts=3
             )
             if response.status_code != 200:
+                raw_detail = (response.text or "")[:500]
+                # BUG-35A-01: extract human-readable API error from JSON detail
+                try:
+                    import json as _json
+
+                    detail_obj = _json.loads(raw_detail)
+                    api_msg = detail_obj.get("error", raw_detail)
+                except Exception:
+                    api_msg = raw_detail
                 return {
                     "status": "error",
-                    "error": "GtoPdb API error",
+                    "error": f"GtoPdb API error: {api_msg} (HTTP {response.status_code})",
                     "url": url,
                     "status_code": response.status_code,
-                    "detail": (response.text or "")[:500],
+                    "detail": raw_detail,
                 }
             data = response.json()
 
@@ -114,12 +123,29 @@ class GtoPdbRESTTool(BaseTool):
             if isinstance(data, list) and len(data) > limit:
                 data = data[:limit]
 
-            return {
+            result: Dict[str, Any] = {
                 "status": "success",
                 "data": data,
                 "url": url,
                 "count": len(data) if isinstance(data, list) else 1,
             }
+
+            # BUG-35A-02: add top-level queried_target summary for interactions endpoint
+            # so users can immediately verify they're getting the right target's data
+            if isinstance(data, list) and data and "/interactions" in url:
+                first = data[0]
+                if "targetId" in first or "targetName" in first:
+                    result["queried_target"] = {
+                        "id": first.get("targetId"),
+                        "name": first.get("targetName"),
+                    }
+                elif "ligandId" in first or "ligandName" in first:
+                    result["queried_ligand"] = {
+                        "id": first.get("ligandId"),
+                        "name": first.get("ligandName"),
+                    }
+
+            return result
         except Exception as e:
             return {
                 "status": "error",

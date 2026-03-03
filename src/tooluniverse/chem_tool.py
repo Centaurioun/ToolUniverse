@@ -179,6 +179,60 @@ class ChEMBLRESTTool(BaseTool):
             params = self._build_params(arguments)
             tool_name = self.tool_config.get("name", "")
 
+            # BUG-36A-01: ChEMBL_get_molecule_targets — the /target.json endpoint
+            # does NOT support molecule_chembl_id__exact filtering (silently ignored).
+            # Correct approach: query /activity.json?molecule_chembl_id=X and
+            # deduplicate the target fields from the activity records.
+            if tool_name == "ChEMBL_get_molecule_targets":
+                mol_id = arguments.get("molecule_chembl_id__exact") or arguments.get(
+                    "molecule_chembl_id"
+                )
+                if mol_id:
+                    activity_url = self.base_url + "/activity.json"
+                    limit = arguments.get("limit", 500)
+                    act_params = {
+                        "molecule_chembl_id": mol_id,
+                        "limit": min(limit, 500),
+                        "format": "json",
+                        "only": "target_chembl_id,target_pref_name,target_organism,target_tax_id",
+                    }
+                    resp = request_with_retry(
+                        self.session,
+                        "GET",
+                        activity_url,
+                        params=act_params,
+                        timeout=self.timeout,
+                        max_attempts=3,
+                    )
+                    resp.raise_for_status()
+                    act_data = resp.json()
+                    activities = act_data.get("activities", [])
+                    # Deduplicate by target_chembl_id
+                    seen = set()
+                    targets = []
+                    for act in activities:
+                        tid = act.get("target_chembl_id")
+                        if tid and tid not in seen:
+                            seen.add(tid)
+                            targets.append(
+                                {
+                                    "target_chembl_id": tid,
+                                    "pref_name": act.get("target_pref_name"),
+                                    "organism": act.get("target_organism"),
+                                }
+                            )
+                    return {
+                        "status": "success",
+                        "data": {"targets": targets},
+                        "molecule_chembl_id": mol_id,
+                        "count": len(targets),
+                        "url": resp.url,
+                    }
+                return {
+                    "status": "error",
+                    "error": "molecule_chembl_id__exact or molecule_chembl_id is required",
+                }
+
             # Check if this is an image endpoint
             is_image_endpoint = (
                 "get_molecule_image" in tool_name.lower() or "/image/" in url

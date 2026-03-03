@@ -102,7 +102,10 @@ class SYNERGxDBTool(BaseTool):
         if response.status_code == 200:
             return {"ok": True, "data": response.json()}
         elif response.status_code == 404:
-            return {"ok": False, "error": "No data found for the given parameters"}
+            # BUG-36A-04: 404 means no data for these params (a normal research outcome),
+            # not a real error. Return ok=True with empty data so callers can handle it
+            # as empty results (exit code 0) rather than a failure (exit code 1).
+            return {"ok": True, "data": [], "no_data": True}
         elif response.status_code == 400:
             try:
                 err = response.json()
@@ -151,6 +154,13 @@ class SYNERGxDBTool(BaseTool):
             return {"status": "error", "error": result["error"]}
 
         data = result["data"]
+        if result.get("no_data") or not data:
+            return {
+                "status": "success",
+                "data": [],
+                "count": 0,
+                "message": "No combination data found for the given parameters in SYNERGxDB.",
+            }
         return {
             "status": "success",
             "data": data,
@@ -192,6 +202,18 @@ class SYNERGxDBTool(BaseTool):
             return {"status": "error", "error": result["error"]}
 
         data = result["data"]
+
+        # BUG-35A-08: client-side name filtering if query/name is provided
+        name_filter = arguments.get("query") or arguments.get("name")
+        if name_filter and isinstance(data, list):
+            name_lower = name_filter.lower()
+            data = [
+                d
+                for d in data
+                if name_lower in str(d.get("drug_name", "")).lower()
+                or name_lower in str(d.get("name", "")).lower()
+            ]
+
         return {
             "status": "success",
             "data": data,

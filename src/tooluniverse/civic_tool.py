@@ -41,6 +41,9 @@ class CIViCTool(BaseTool):
         # array_wrap: maps argument name -> GraphQL variable name, wrapping string in a list
         # e.g. {"gene_symbol": "entrezSymbols"} means arguments["gene_symbol"] -> variables["entrezSymbols"] = [value]
         self.array_wrap: Dict[str, str] = fields.get("array_wrap", {})
+        # param_map: maps argument name -> GraphQL variable name (without list wrapping)
+        # e.g. {"therapy": "therapyName"} means arguments["therapy"] -> variables["therapyName"] = value
+        self.param_map: Dict[str, str] = fields.get("param_map", {})
 
     def _build_graphql_query(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Build GraphQL query from template and arguments."""
@@ -65,6 +68,13 @@ class CIViCTool(BaseTool):
             if arg_name in arguments and arguments[arg_name] is not None:
                 val = arguments[arg_name]
                 variables[var_name] = [val] if not isinstance(val, list) else val
+
+        # Handle param_map: rename argument names to GraphQL variable names
+        # Only sets the variable if not already set by direct name match
+        for arg_name, var_name in self.param_map.items():
+            if arg_name in arguments and arguments[arg_name] is not None:
+                if var_name not in variables:
+                    variables[var_name] = arguments[arg_name]
 
         payload = {"query": query}
 

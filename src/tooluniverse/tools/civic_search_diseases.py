@@ -10,6 +10,8 @@ from ._shared_client import get_shared_client
 
 def civic_search_diseases(
     limit: Optional[int] = 20,
+    name: Optional[str] = None,
+    query: Optional[str] = None,
     *,
     stream_callback: Optional[Callable[[str], None]] = None,
     use_cache: bool = False,
@@ -22,6 +24,10 @@ def civic_search_diseases(
     ----------
     limit : int
         Maximum number of diseases to return (default: 20, recommended max: 100)
+    name : str
+        Filter by disease name (e.g., 'leukemia', 'melanoma', 'lung cancer'). Alias: query.
+    query : str
+        Alias for name. Filter by disease name.
     stream_callback : Callable, optional
         Callback for streaming output
     use_cache : bool, default False
@@ -33,10 +39,16 @@ def civic_search_diseases(
     -------
     dict[str, Any]
     """
-    # Handle mutable defaults to avoid B006 linting error
-
     # Strip None values so optional parameters don't trigger schema validation errors
-    _args = {k: v for k, v in {"limit": limit}.items() if v is not None}
+    _args = {
+        k: v
+        for k, v in {
+            "limit": limit,
+            "name": name,
+            "query": query,
+        }.items()
+        if v is not None
+    }
     return get_shared_client().run_one_function(
         {
             "name": "civic_search_diseases",
