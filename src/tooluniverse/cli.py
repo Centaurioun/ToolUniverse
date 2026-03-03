@@ -1507,6 +1507,13 @@ def main() -> None:
         action="version",
         version=f"%(prog)s {_TU_VERSION}",
     )
+    # BUG-24B-02: --quiet suppresses the missing-API-key warning that fires on every command.
+    parser.add_argument(
+        "--quiet",
+        "-q",
+        action="store_true",
+        help="Suppress informational warnings (e.g. missing API key notices)",
+    )
     sub = parser.add_subparsers(dest="command", metavar="COMMAND")
     sub.required = True
 
@@ -1765,6 +1772,11 @@ def main() -> None:
         help="Start the MCP stdio server (identical to `tooluniverse`)",
     )
     p.set_defaults(func=cmd_serve)
+
+    # BUG-24B-02: set TOOLUNIVERSE_QUIET before parse so load_tools() respects it.
+    # We check argv directly because argparse hasn't run yet.
+    if "--quiet" in sys.argv or "-q" in sys.argv:
+        os.environ["TOOLUNIVERSE_QUIET"] = "1"
 
     # BUG-R20B: argparse exits with code 2 and empty stdout on bad args (e.g. --limit -1).
     # Callers that do json.loads(stdout) crash on empty string.

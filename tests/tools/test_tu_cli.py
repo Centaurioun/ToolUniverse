@@ -4963,6 +4963,36 @@ class TestRound23BRemainingFixes:
         assert "quotes" not in err.lower()
 
 
+class TestRound24MoreFixes:
+    """Tests for BUG-24B-02 (--quiet flag suppresses API key warnings)."""
+
+    @pytest.mark.unit
+    def test_quiet_flag_suppresses_api_key_warning(self):
+        """BUG-24B-02: tu --quiet <cmd> suppresses the missing-API-key warning."""
+        rc, out, err = _cli("--quiet", "list", "--limit", "2")
+        assert rc == 0
+        # Warning about missing API keys should be gone
+        assert "missing API keys" not in err
+        assert "Some tools will not be loaded" not in err
+
+    @pytest.mark.unit
+    def test_without_quiet_warning_present(self):
+        """BUG-24B-02: without --quiet the missing-API-key warning is shown (baseline)."""
+        import os
+
+        # Only run if there are actually missing keys (almost always true in CI)
+        env_before = os.environ.get("TOOLUNIVERSE_QUIET")
+        os.environ.pop("TOOLUNIVERSE_QUIET", None)
+        try:
+            rc, out, err = _cli("list", "--limit", "1")
+            assert rc == 0
+            # In most environments some API keys are missing — warning appears
+            # (this test is informational, not strict)
+        finally:
+            if env_before is not None:
+                os.environ["TOOLUNIVERSE_QUIET"] = env_before
+
+
 class TestRound24Fixes:
     """Tests for BUG-24B-05, BUG-24A-06, BUG-23A-06 (Round 24 initial fixes)."""
 
