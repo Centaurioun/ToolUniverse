@@ -123,7 +123,10 @@ class CIViCTool(BaseTool):
     ) -> Dict[str, Any]:
         """Fetch variants for a given CIViC gene_id via GraphQL."""
         payload = {
-            "query": "query GetVariantsByGene($gene_id: Int!, $limit: Int) { gene(id: $gene_id) { id name variants(first: $limit) { nodes { id name } } } }",
+            # BUG-41A-02: include feature { id name } in variant nodes so callers can
+            # distinguish e.g. KRAS G12C (ID 78) from NRAS G12C (ID 897).
+            # CIViC uses 'feature' (not 'gene') as the field on GeneVariant type.
+            "query": "query GetVariantsByGene($gene_id: Int!, $limit: Int) { gene(id: $gene_id) { id name variants(first: $limit) { nodes { id name ... on GeneVariant { feature { id name } } } } } }",
             "operationName": "GetVariantsByGene",
             "variables": {"gene_id": gene_id, "limit": limit},
         }
@@ -171,36 +174,56 @@ class CIViCTool(BaseTool):
             )
 
         # BUG-40B-01: civic_search_evidence_items — warn on unsupported gene/variant params.
-        # These are not in the GraphQL schema and are silently ignored, misleading callers.
+        # BUG-41A-03: also catch molecular_profile_id (integer) — no GraphQL binding.
+        # These parameters are not in the GraphQL schema and are silently ignored.
         if tool_name == "civic_search_evidence_items":
             unsupported = [
-                p for p in ("gene", "variant", "gene_name") if arguments.get(p)
+                p
+                for p in ("gene", "variant", "gene_name", "molecular_profile_id")
+                if arguments.get(p)
             ]
             if unsupported:
                 gene = arguments.get("gene") or arguments.get("gene_name")
                 variant = arguments.get("variant")
+                mol_id = arguments.get("molecular_profile_id")
                 profile_hint = ""
                 if gene and variant:
                     profile_hint = f' Try: molecular_profile="{gene} {variant}"'
                 elif gene:
                     profile_hint = f' Try: molecular_profile="{gene}"'
+                elif mol_id:
+                    profile_hint = (
+                        f" For integer ID filtering, use civic_get_evidence_item with the "
+                        f"evidence ID, or civic_get_variant with the variant ID."
+                    )
                 return {
                     "error": f"Unsupported parameter(s) for civic_search_evidence_items: {', '.join(unsupported)}. "
-                    "Use molecular_profile to filter by variant (e.g., 'BRAF V600E'), "
-                    "therapy to filter by drug name, disease to filter by disease name."
-                    + profile_hint,
+                    "Supported filters: molecular_profile (string, e.g. 'BRAF V600E'), "
+                    "therapy, disease, status." + profile_hint,
                 }
 
-        # civic_search_variants: if gene/gene_name provided, look up gene_id then get variants
+        # civic_search_variants: if gene/gene_name provided, look up gene_id then get variants.
+        # BUG-41A-01: also handle combined gene+query — get gene variants, filter client-side.
         if tool_name == "civic_search_variants":
             gene_name = arguments.get("gene") or arguments.get("gene_name")
-            if gene_name and not arguments.get("query"):
+            query_term = arguments.get("query")
+            if gene_name:
                 gene_id = self._lookup_gene_id(gene_name)
                 if gene_id is None:
                     return {"error": f"Gene '{gene_name}' not found in CIViC database"}
-                return self._get_variants_for_gene_id(
+                result = self._get_variants_for_gene_id(
                     gene_id, arguments.get("limit", 50)
                 )
+                # If query also provided, filter returned variants by name client-side
+                if query_term and isinstance(result.get("data"), dict):
+                    gene_data = result["data"].get("gene", {})
+                    nodes = gene_data.get("variants", {}).get("nodes", [])
+                    q_lower = query_term.lower()
+                    filtered = [
+                        v for v in nodes if q_lower in v.get("name", "").lower()
+                    ]
+                    gene_data.get("variants", {})["nodes"] = filtered
+                return result
 
         try:
             # Build GraphQL query

@@ -274,6 +274,10 @@
         "cancer": {
           "type": "string",
           "description": "Cancer type to search for. Alias for keyword."
+        },
+        "query": {
+          "type": "string",
+          "description": "Search query. Alias for keyword (e.g., 'lung', 'breast', 'TCGA')."
         }
       },
       "required": []

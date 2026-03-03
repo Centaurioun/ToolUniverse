@@ -217,15 +217,25 @@ class ChEMBLRESTTool(BaseTool):
 
             # BUG-40B-03: ChEMBL_search_mechanisms — drug_name is not a valid ChEMBL
             # API parameter; it is silently ignored, returning unrelated mechanisms.
+            # BUG-41B-01: query/pref_name__icontains is also silently ignored by
+            # /mechanism.json endpoint — catch it here and return a helpful error.
             if tool_name == "ChEMBL_search_mechanisms":
                 drug_name = arguments.get("drug_name")
-                if drug_name:
+                query_name = arguments.get("query") or arguments.get("q")
+                if drug_name or query_name:
+                    bad_param = (
+                        f"drug_name='{drug_name}'"
+                        if drug_name
+                        else f"query='{query_name}'"
+                    )
                     return {
                         "status": "error",
-                        "error": f"drug_name ('{drug_name}') is not a valid parameter for "
-                        "ChEMBL_search_mechanisms. To search by drug name, first find the "
-                        "ChEMBL ID using ChEMBL_search_molecules or ChEMBL_search_drugs, "
-                        "then use drug_chembl_id (e.g., 'CHEMBL2028663' for dabrafenib).",
+                        "error": f"{bad_param} is not supported for ChEMBL_search_mechanisms. "
+                        "The /mechanism.json endpoint ignores name-based filters. "
+                        "To search mechanisms by drug name: (1) find the ChEMBL ID with "
+                        "ChEMBL_search_molecules or ChEMBL_search_drugs, then (2) use "
+                        "drug_chembl_id (e.g., 'CHEMBL3137343' for pembrolizumab). "
+                        "Alternatively, filter by mechanism_of_action__contains (e.g., 'PD-1').",
                     }
 
             # BUG-36A-01: ChEMBL_get_molecule_targets — the /target.json endpoint

@@ -266,7 +266,7 @@
       "required": []
     },
     "fields": {
-      "query": "query SearchVariants($query: String, $limit: Int) { variants(name: $query, first: $limit) { nodes { id name } } }",
+      "query": "query SearchVariants($query: String, $limit: Int) { variants(name: $query, first: $limit) { nodes { id name ... on GeneVariant { feature { id name } } } } }",
       "operation_name": "SearchVariants"
     },
     "return_schema": {
@@ -713,7 +713,7 @@
   },
   {
     "name": "civic_search_molecular_profiles",
-    "description": "Search for molecular profiles in CIViC database. Molecular profiles represent combinations of variants or features (e.g., 'BRAF V600E', 'EGFR T790M') that serve as biomarkers for clinical interpretation. Returns a list of molecular profiles with IDs and names. Use the name parameter to filter by profile name.",
+    "description": "Search for molecular profiles in CIViC database. Molecular profiles represent combinations of variants or features (e.g., 'BRAF V600E', 'EGFR T790M') that serve as biomarkers for clinical interpretation. Returns a list of molecular profiles with IDs and names. Use the 'query' parameter to filter by profile name (alias: 'name').",
     "type": "CIViCTool",
     "parameter": {
       "type": "object",
@@ -725,14 +725,21 @@
         },
         "query": {
           "type": "string",
-          "description": "Filter by molecular profile name (e.g., 'BRAF V600E', 'EGFR T790M', 'FLT3 ITD'). Returns profiles whose name contains this string."
+          "description": "Filter by molecular profile name (e.g., 'BRAF V600E', 'EGFR T790M', 'FLT3 ITD'). Returns profiles whose name contains this string. Alias: 'name'."
+        },
+        "name": {
+          "type": "string",
+          "description": "Alias for query. Filter by molecular profile name (e.g., 'PD-L1', 'KRAS G12C')."
         }
       },
       "required": []
     },
     "fields": {
       "query": "query SearchMolecularProfiles($limit: Int, $query: String) { molecularProfiles(first: $limit, name: $query) { nodes { id name } } }",
-      "operation_name": "SearchMolecularProfiles"
+      "operation_name": "SearchMolecularProfiles",
+      "param_map": {
+        "name": "query"
+      }
     },
     "return_schema": {
       "type": "object",
