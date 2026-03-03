@@ -4691,8 +4691,12 @@ class TestRound23BFixes:
     # BUG-23B-01: tu grep chip-seq returns 0 matches with no hint about removing hyphen
 
     @pytest.mark.unit
-    def test_render_grep_hyphen_pattern_suggests_nohyphen(self):
-        """BUG-23B-01: name-field 0-match with hyphen hints to remove the hyphen."""
+    def test_render_grep_hyphen_pattern_suggests_description_field(self):
+        """BUG-23B-01/BUG-25B-01: name-field 0-match with hyphen hints --field description.
+
+        Descriptions do use hyphens, so the tip should point directly there
+        rather than suggesting the unhyphenated variant (which also returns 0 matches).
+        """
         from tooluniverse.cli import _render_grep
 
         d = {
@@ -4705,7 +4709,7 @@ class TestRound23BFixes:
             "has_more": False,
         }
         result = _render_grep(d)
-        assert "chipseq" in result  # nohyphen variant suggested
+        assert "--field description" in result
         assert "hyphen" in result.lower()
 
     @pytest.mark.unit

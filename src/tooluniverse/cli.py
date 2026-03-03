@@ -269,11 +269,12 @@ def _render_grep(d: dict) -> str:
                     f"'{underscore_hint}', or use --field description)"
                 )
             if "-" in pattern:
-                # BUG-23B-01: tool names don't contain hyphens — suggest removing them
-                nohyphen = pattern.replace("-", "")
+                # BUG-23B-01/BUG-25B-01: tool names don't use hyphens, but descriptions
+                # do. Point directly to --field description rather than the unhyphenated
+                # name variant (which often also returns 0 matches in the name field).
                 return (
-                    f"0 matches  (tip: tool names don't use hyphens — try "
-                    f"'{nohyphen}', or use --field description)"
+                    f"0 matches  (tip: tool names don't use hyphens, but descriptions do "
+                    f"— try `tu grep '{pattern}' --field description`)"
                 )
             return (
                 "0 matches  (tip: use --field description to search tool descriptions)"
@@ -466,11 +467,27 @@ def _render_run(d: dict) -> str:
     short_err = d.get("error", "unknown error")
     lines = [f"Error: {short_err}"]
     details = d.get("error_details") or {}
-    next_steps = details.get("next_steps") or []
-    if next_steps:
+
+    # BUG-25B-02: for "tool not found" errors, replace generic network tips
+    # with tool-discovery tips and include fuzzy suggestions when available.
+    is_not_found = "not found" in short_err.lower()
+    suggestions = d.get("suggestions") or details.get("suggestions") or []
+    if is_not_found:
+        if suggestions:
+            lines.append(f"  Did you mean: {', '.join(suggestions[:3])}?")
         lines.append("Tips:")
-        for step in next_steps:
-            lines.append(f"  • {step}")
+        lines.append("  • Check tool name spelling (names are case-sensitive)")
+        lines.append("  • Run `tu grep <name>` to search for similar tools")
+        lines.append("  • Run `tu find '<description>'` for natural-language search")
+    else:
+        next_steps = details.get("next_steps") or []
+        # BUG-25B-07: filter out Python SDK-specific tips not relevant to CLI users
+        cli_steps = [s for s in next_steps if "tu.tools.refresh()" not in s]
+        if cli_steps:
+            lines.append("Tips:")
+            for step in cli_steps:
+                lines.append(f"  • {step}")
+
     return "\n".join(lines)
 
 
@@ -1575,10 +1592,13 @@ def main() -> None:
     p.add_argument(
         # BUG-23B-03: nargs="*" so bare --categories (no args) is parseable;
         # cmd_list treats the empty-list case as a redirect to the categories overview.
+        # BUG-25B-08: --category (singular) accepted as alias for --categories.
         "--categories",
+        "--category",
         nargs="*",
         metavar="CAT",
         help="Filter by category names (omit names to see the full category overview)",
+        dest="categories",
     )
     p.add_argument(
         "--fields",
