@@ -377,7 +377,10 @@ def _render_info(d: dict) -> str:
             if suggestions:
                 hint = f"\n  Did you mean: {', '.join(suggestions)}?"
             else:
-                hint = "\n  Run `tu grep " + name[:6] + "` to search for similar tools."
+                # BUG-24B-05: use full name (not truncated) so suggestion is useful.
+                # Split on underscore and take the first meaningful segment so that
+                # e.g. 'AlphaFold' → 'tu grep AlphaFold' (finds alphafold_* tools).
+                hint = f"\n  Run `tu grep {name}` to search for similar tools."
             return f"Error: Tool '{name}' not found.{hint}"
         return f"Error: {d['error']}"
     # batch result
@@ -797,6 +800,10 @@ def cmd_list(args: argparse.Namespace) -> None:
             f"  Valid fields include: {valid}",
             file=sys.stderr,
         )
+    # BUG-23A-06: inject categories_filtered so list JSON schema is consistent
+    # with grep and find (which always emit "categories_filtered").
+    if isinstance(result, dict) and "error" not in result:
+        result["categories_filtered"] = args.categories or None
     _print_result(result, args, _render_list)
     # BUG-R13B-06: exit 1 when an unknown category was passed.
     if _cat_unknown:
@@ -1035,20 +1042,23 @@ def cmd_run(args: argparse.Namespace) -> None:
     try:
         arguments = _parse_run_args(args.arguments)
     except (json.JSONDecodeError, ValueError) as exc:
-        # `tu run` is always a machine-facing JSON interface, so errors are
-        # always emitted as JSON on stdout for consistent script consumption.
-        print(
-            json.dumps(
-                {
-                    "status": "error",
-                    "error": str(exc),
-                    "error_details": {
-                        "retriable": False,
-                        "type": "argument_parse_error",
-                    },
-                }
+        err_payload = {
+            "status": "error",
+            "error": str(exc),
+            "error_details": {
+                "retriable": False,
+                "type": "argument_parse_error",
+            },
+        }
+        # BUG-24B-07: human mode shows a friendly hint; --json/--raw gets JSON on stdout.
+        if getattr(args, "json", False) or getattr(args, "raw", False):
+            print(json.dumps(err_payload))
+        else:
+            print(
+                f"Error: {exc}\n"
+                f"  Tip: use key=value syntax, e.g. `tu run {args.tool_name} param=value`",
+                file=sys.stderr,
             )
-        )
         sys.exit(1)
 
     with _status_to_stderr():

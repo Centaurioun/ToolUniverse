@@ -1043,19 +1043,19 @@ class TestRun:
 
     @pytest.mark.unit
     def test_run_invalid_json_error_to_stdout_as_json(self, monkeypatch, tu, capsys):
-        """JSON parse error for tu run goes to stdout as JSON (tu run is machine-facing)."""
+        """JSON parse error for tu run in --json mode goes to stdout as JSON."""
         from tooluniverse.cli import cmd_run
 
         with pytest.raises(SystemExit):
             _run(
                 monkeypatch,
                 cmd_run,
-                _args(tool_name="list_tools", arguments=["not json"]),
+                _args(tool_name="list_tools", arguments=["not json"], json=True),
                 tu,
                 capsys,
             )
         cap = capsys.readouterr()
-        # tu run always outputs JSON to stdout — even parse errors
+        # --json mode outputs JSON to stdout — even parse errors
         d = _j(cap.out)
         assert d["status"] == "error"
         assert "error_details" in d
@@ -1407,10 +1407,10 @@ class TestArgparse:
 
     @pytest.mark.unit
     def test_run_invalid_json_exits_1(self):
-        """tu run list_tools '{bad json}' exits with code 1, error JSON on stdout."""
-        rc, out, err = _cli("run", "list_tools", "{bad json}")
+        """tu run list_tools --json '{bad json}' exits with code 1, error JSON on stdout."""
+        rc, out, err = _cli("run", "list_tools", "{bad json}", "--json")
         assert rc == 1
-        # tu run always outputs JSON to stdout — even for parse errors
+        # --json mode outputs JSON to stdout — even for parse errors
         d = json.loads(out)
         assert d["status"] == "error"
 
@@ -2886,7 +2886,7 @@ class TestRunJsonErrorToStdout:
         tu = MagicMock()
         monkeypatch.setattr(m, "_get_tu", lambda: tu)
         args = argparse.Namespace(
-            tool_name="list_tools", arguments=["{not json}"], raw=False, json=False
+            tool_name="list_tools", arguments=["{not json}"], raw=False, json=True
         )
         import sys as _sys, io as _io
         # Capture stdout
@@ -3126,7 +3126,7 @@ class TestRound10Fixes:
         tu = MagicMock()
         monkeypatch.setattr(m, "_get_tu", lambda: tu)
         args = argparse.Namespace(
-            tool_name="list_tools", arguments=["{invalid json}"], raw=False, json=False
+            tool_name="list_tools", arguments=["{invalid json}"], raw=False, json=True
         )
         import sys as _sys, io as _io
         old_stdout = _sys.stdout
