@@ -1267,6 +1267,10 @@
         "molecule_chembl_id": {
           "type": "string",
           "description": "Alias for drug_chembl_id. ChEMBL molecule ID (e.g., \"CHEMBL25\" for aspirin)."
+        },
+        "chembl_id": {
+          "type": "string",
+          "description": "Alias for drug_chembl_id. ChEMBL ID (e.g., \"CHEMBL3301622\")."
         }
       },
       "required": []
@@ -1300,7 +1304,7 @@
     },
     "test_examples": [
       {
-        "molecule_chembl_id__exact": "CHEMBL1201581",
+        "drug_chembl_id": "CHEMBL1201581",
         "limit": 5
       }
     ]

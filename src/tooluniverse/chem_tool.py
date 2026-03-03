@@ -139,7 +139,12 @@ class ChEMBLRESTTool(BaseTool):
         # BUG-30B-05: Map `drug_chembl_id` to `molecule_chembl_id__exact` so
         # ChEMBL_get_drug_mechanisms accepts the same ID param as ChEMBL_get_drug.
         # BUG-32B-07: Also accept `molecule_chembl_id` as an alias.
-        drug_id = args.get("drug_chembl_id") or args.get("molecule_chembl_id")
+        # BUG-39A-01: Also accept `chembl_id` as a common alias.
+        drug_id = (
+            args.get("drug_chembl_id")
+            or args.get("molecule_chembl_id")
+            or args.get("chembl_id")
+        )
         if drug_id is not None:
             params["molecule_chembl_id__exact"] = drug_id
 
@@ -178,6 +183,25 @@ class ChEMBLRESTTool(BaseTool):
             url = self._build_url(arguments)
             params = self._build_params(arguments)
             tool_name = self.tool_config.get("name", "")
+
+            # BUG-39A-01: ChEMBL_get_drug_mechanisms — validate at least one molecule
+            # filter is present; without it the ChEMBL API returns all mechanisms
+            # in the database (misleading success with random data).
+            if tool_name == "ChEMBL_get_drug_mechanisms":
+                mol_id = (
+                    arguments.get("drug_chembl_id")
+                    or arguments.get("molecule_chembl_id")
+                    or arguments.get("chembl_id")
+                    or arguments.get("molecule_chembl_id__exact")
+                )
+                if not mol_id:
+                    return {
+                        "status": "error",
+                        "error": "drug_chembl_id is required for ChEMBL_get_drug_mechanisms. "
+                        "Provide the ChEMBL ID of the drug (e.g., 'CHEMBL25' for aspirin). "
+                        "Use ChEMBL_search_drugs or ChEMBL_search_molecules to find the ID first. "
+                        "Aliases accepted: drug_chembl_id, molecule_chembl_id, chembl_id.",
+                    }
 
             # BUG-36A-01: ChEMBL_get_molecule_targets — the /target.json endpoint
             # does NOT support molecule_chembl_id__exact filtering (silently ignored).

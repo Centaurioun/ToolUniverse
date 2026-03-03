@@ -44,6 +44,9 @@ class CIViCTool(BaseTool):
         # param_map: maps argument name -> GraphQL variable name (without list wrapping)
         # e.g. {"therapy": "therapyName"} means arguments["therapy"] -> variables["therapyName"] = value
         self.param_map: Dict[str, str] = fields.get("param_map", {})
+        # variable_defaults: applies default values for GraphQL variables not supplied by user
+        # e.g. {"status": "ACCEPTED"} sets status=ACCEPTED when not explicitly provided
+        self.variable_defaults: Dict[str, Any] = fields.get("variable_defaults", {})
 
     def _build_graphql_query(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Build GraphQL query from template and arguments."""
@@ -75,6 +78,11 @@ class CIViCTool(BaseTool):
             if arg_name in arguments and arguments[arg_name] is not None:
                 if var_name not in variables:
                     variables[var_name] = arguments[arg_name]
+
+        # Apply variable_defaults: set defaults for variables not already set by arguments
+        for var_name, default_val in self.variable_defaults.items():
+            if var_name not in variables and var_name in var_matches:
+                variables[var_name] = default_val
 
         payload = {"query": query}
 

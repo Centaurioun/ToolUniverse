@@ -376,9 +376,11 @@
           "default": 20
         },
         "status": {
-          "type": "string",
-          "description": "Filter by curation status: ACCEPTED, REJECTED, or SUBMITTED (default: ACCEPTED)",
-          "enum": ["ACCEPTED", "REJECTED", "SUBMITTED"]
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Filter by curation status. Default: ACCEPTED (peer-reviewed). Options: ACCEPTED, SUBMITTED, REJECTED."
         },
         "therapy": {
           "type": "string",
@@ -412,6 +414,9 @@
         "disease": "diseaseName",
         "disease_name": "diseaseName",
         "molecular_profile": "molecularProfileName"
+      },
+      "variable_defaults": {
+        "status": "ACCEPTED"
       }
     },
     "return_schema": {
@@ -650,14 +655,44 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "id": {"type": "integer"},
-                          "name": {"type": "string"},
-                          "evidenceLevel": {"type": "string", "description": "A-E evidence level"},
-                          "evidenceDirection": {"type": "string"},
-                          "significance": {"type": "string"},
-                          "status": {"type": "string"},
-                          "disease": {"type": "object", "properties": {"name": {"type": "string"}}},
-                          "therapies": {"type": "array", "items": {"type": "object", "properties": {"name": {"type": "string"}}}}
+                          "id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "evidenceLevel": {
+                            "type": "string",
+                            "description": "A-E evidence level"
+                          },
+                          "evidenceDirection": {
+                            "type": "string"
+                          },
+                          "significance": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "disease": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "therapies": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
                         }
                       }
                     }
