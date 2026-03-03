@@ -856,10 +856,9 @@ def cmd_find(args: argparse.Namespace) -> None:
         tools_list = (
             result.get("tools") if isinstance(result.get("tools"), list) else []
         )
-        total = result.get("total_matches", len(tools_list))
-        if total == 0:
-            # No matches at all — exit 1 (query produced no results)
-            sys.exit(1)
+        result.get("total_matches", len(tools_list))
+        # BUG-R16A-07/R16B-09: exit 0 on zero matches — consistent with grep.
+        # 0 results is a valid non-error outcome; the command ran successfully.
         # BUG-R14B-02: do NOT exit 1 when offset is past end. An empty page with
         # total_matches > 0 is normal pagination completion, not an error.
 

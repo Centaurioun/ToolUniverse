@@ -860,18 +860,18 @@ class TestFind:
 
     @pytest.mark.unit
     def test_find_stopwords_only_returns_zero_matches(self, monkeypatch, tu, capsys):
-        """A query of only stopwords returns standard schema with total_matches=0 and exits 1.
+        """A query of only stopwords returns standard schema with total_matches=0 and exits 0.
 
         BUG-R13B-01 fix: standard schema so programmatic consumers can always read
         total_matches without branching on 'error' key; warning is in processing_info.
+        BUG-R16A-07/R16B-09: exits 0 (zero results is not an error).
         """
         from tooluniverse.cli import cmd_find
         import tooluniverse.cli as m
 
         monkeypatch.setattr(m, "_get_tu", lambda: tu)
-        with pytest.raises(SystemExit) as exc_info:
-            cmd_find(_args(query="the and for from", json=True))
-        assert exc_info.value.code == 1
+        # Should NOT raise SystemExit — zero results exits 0
+        cmd_find(_args(query="the and for from", json=True))
         out = capsys.readouterr().out
         d = _j(out)
         assert "error" not in d
@@ -2620,8 +2620,9 @@ class TestCmdFindOffset:
         m.cmd_find(args)
 
     @pytest.mark.unit
-    def test_find_zero_total_matches_exits_1(self, monkeypatch):
-        """BUG-NEW-02: tu find should exit 1 when total_matches == 0."""
+    def test_find_zero_total_matches_exits_0(self, monkeypatch):
+        """BUG-R16A-07/R16B-09: tu find should exit 0 when total_matches == 0.
+        Zero results is a valid non-error outcome, consistent with grep."""
         import tooluniverse.cli as m
         import tooluniverse.tool_finder_keyword as tfk
         from unittest.mock import MagicMock
@@ -2641,9 +2642,8 @@ class TestCmdFindOffset:
             query="zzz_no_results", limit=10, offset=0, categories=None,
             raw=False, json=False,
         )
-        with pytest.raises(SystemExit) as exc:
-            m.cmd_find(args)
-        assert exc.value.code == 1
+        # Should NOT raise SystemExit for zero results
+        m.cmd_find(args)
 
     @pytest.mark.unit
     def test_find_offset_arg_accepted(self):
@@ -3529,14 +3529,14 @@ class TestRound13Fixes:
 
     @pytest.mark.unit
     def test_find_stopwords_returns_standard_schema(self, monkeypatch, tu, capsys):
-        """BUG-R13B-01: stopword-only query returns standard schema, not error schema."""
+        """BUG-R13B-01: stopword-only query returns standard schema, not error schema.
+        BUG-R16A-07: exits 0 (zero results is not an error)."""
         import tooluniverse.cli as m
         from tooluniverse.cli import cmd_find
 
         monkeypatch.setattr(m, "_get_tu", lambda: tu)
-        with pytest.raises(SystemExit) as exc:
-            cmd_find(_args(query="the and for", json=True))
-        assert exc.value.code == 1
+        # Should NOT raise SystemExit — exits 0 for zero results
+        cmd_find(_args(query="the and for", json=True))
         out, _ = capsys.readouterr()
         d = _j(out)
         # Standard schema keys must be present (not error schema)
@@ -3770,3 +3770,58 @@ class TestRound15Fixes:
         pi = d.get("processing_info", {})
         assert "query_submitted" in pi
         assert "BioGRID_get_chemical_interactions" in pi.get("query_submitted", "")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Round 16 bug fixes
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+class TestRound16Fixes:
+    """Tests covering bug fixes from Round 16 simulation agents."""
+
+    # R16A-07/R16B-09: find exits 0 on 0 results (consistent with grep)
+    @pytest.mark.unit
+    def test_find_zero_results_exits_0(self, monkeypatch, tu, capsys):
+        """R16A-07/R16B-09: find with no matches should exit 0 — consistent with grep."""
+        from tooluniverse.cli import cmd_find
+        import tooluniverse.tool_finder_keyword as tfk
+        from unittest.mock import MagicMock
+
+        finder_result = json.dumps({
+            "query": "asdfghjklqwerty",
+            "total_matches": 0,
+            "limit": 10,
+            "offset": 0,
+            "has_more": False,
+            "tools": [],
+        })
+        mock_finder = MagicMock()
+        mock_finder._run_json_search.return_value = finder_result
+        import tooluniverse.cli as m
+        monkeypatch.setattr(m, "_get_tu", lambda: tu)
+        monkeypatch.setattr(tfk, "ToolFinderKeyword", lambda *a, **kw: mock_finder)
+
+        # Should NOT raise SystemExit — 0 results is success, not error
+        out, _ = _run(monkeypatch, cmd_find,
+                      _args(query="asdfghjklqwerty", json=True),
+                      tu, capsys)
+        d = _j(out)
+        assert d["total_matches"] == 0
+        assert "error" not in d
+
+    @pytest.mark.unit
+    def test_find_real_zero_results_exits_0(self, monkeypatch, tu, capsys):
+        """R16A-07: find with a real nonsense query should exit 0 (live test)."""
+        from tooluniverse.cli import cmd_find
+        import tooluniverse.cli as m
+        monkeypatch.setattr(m, "_get_tu", lambda: tu)
+        # Should NOT raise SystemExit
+        out, _ = _run(monkeypatch, cmd_find,
+                      _args(query="xxxxxyyyyzzzz999nonexistent", json=True),
+                      tu, capsys)
+        d = _j(out)
+        assert "error" not in d
+        # total_matches may be 0 or some number depending on tokenization —
+        # the key assertion is that we got a valid JSON response with exit 0
+        assert "total_matches" in d
