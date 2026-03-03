@@ -72,6 +72,19 @@ class QuickGOTool(BaseTool):
         if not gene_product_id:
             return {"error": "gene_product_id parameter is required"}
 
+        # BUG-25B-05: detect bare gene symbols (e.g. "TP53") and explain the correct format.
+        # QuickGO requires "DB:Accession" format such as "UniProtKB:P04637".
+        if ":" not in gene_product_id:
+            return {
+                "error": (
+                    f"Invalid gene_product_id format: '{gene_product_id}'. "
+                    "QuickGO requires accession format 'DB:Accession', "
+                    "e.g. 'UniProtKB:P04637' for human TP53. "
+                    "Use `tu run UniProt_search query=TP53` to find the UniProt accession "
+                    "for your gene."
+                )
+            }
+
         url = f"{QUICKGO_BASE_URL}/annotation/search"
         params = {
             "geneProductId": gene_product_id,
