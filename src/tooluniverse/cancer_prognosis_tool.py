@@ -118,6 +118,16 @@ _CANCER_NAME_ALIASES: Dict[str, str] = {
     "AML": "LAML",
     "SARCOMA": "SARC",
     "TESTICULAR": "TGCT",
+    # BUG-57A-004: lymphoma aliases — DLBCL is the most common TCGA lymphoma study
+    "DLBCL": "DLBC",
+    "DLBC": "DLBC",
+    "DIFFUSE LARGE B-CELL LYMPHOMA": "DLBC",
+    "DIFFUSE LARGE B CELL LYMPHOMA": "DLBC",
+    "LARGE CELL LYMPHOMA": "DLBC",
+    "LYMPHOMA": "DLBC",
+    "B-CELL LYMPHOMA": "DLBC",
+    "B CELL LYMPHOMA": "DLBC",
+    "FOLLICULAR LYMPHOMA": "DLBC",  # no FL-specific TCGA study; DLBC is closest proxy
 }
 
 
@@ -328,11 +338,45 @@ class CancerPrognosisTool(BaseTool):
             timeout=60,
         )
         if data is None:
+            # BUG-59A-004: provide same guidance as _get_gene_expression for non-TCGA cancers.
+            upper = cancer.upper()
+            _known_non_tcga = {
+                "CLL": "CLL (chronic lymphocytic leukemia) is not a TCGA cancer type. "
+                "Most CLL studies in cBioPortal contain only mutation data (WES), not survival endpoints. "
+                "Use CancerPrognosis_search_studies with keyword='CLL' to see what studies are available.",
+                "CHRONIC LYMPHOCYTIC LEUKEMIA": "CLL is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='leukemia' to find available studies.",
+                "MM": "Multiple myeloma (MM) is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='myeloma' to find available studies.",
+                "MULTIPLE MYELOMA": "Multiple myeloma is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='myeloma' to find available studies.",
+                "FL": "Follicular lymphoma (FL) is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='follicular' to find studies.",
+                "MCL": "Mantle cell lymphoma (MCL) is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='mantle' to find studies.",
+                "OSTEOSARCOMA": "Osteosarcoma is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='osteosarcoma' to find available studies.",
+                "EWING SARCOMA": "Ewing sarcoma is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='sarcoma' to find available studies.",
+                "NEUROBLASTOMA": "Neuroblastoma is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='neuroblastoma' to find available studies.",
+                "MEDULLOBLASTOMA": "Medulloblastoma is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='medulloblastoma' to find available studies.",
+            }
+            specific_msg = _known_non_tcga.get(upper) or _known_non_tcga.get(
+                " ".join(cancer.upper().split())
+            )
+            if specific_msg:
+                return {"status": "error", "error": specific_msg}
+            tcga_types = sorted(TCGA_STUDY_MAP.keys())
             return {
                 "status": "error",
-                "error": "Study '{}' not found or no clinical data available".format(
-                    study_id
-                ),
+                "error": (
+                    "Study '{}' not found or no clinical data available (resolved to study_id='{}')."
+                    " If this is a TCGA cancer type, use one of the 33 supported codes: {}."
+                    " For non-TCGA studies, use CancerPrognosis_search_studies to find"
+                    " the correct study_id (e.g., CancerPrognosis_search_studies(keyword='{}'))."
+                ).format(cancer, study_id, ", ".join(tcga_types), cancer.lower()),
             }
 
         # Extract survival-related fields
@@ -485,11 +529,40 @@ class CancerPrognosisTool(BaseTool):
         # BUG-54A-002: _get_mrna_profile now returns (profile_id, profile_name) tuple
         profile_result = self._get_mrna_profile(study_id)
         if not profile_result:
+            # BUG-58B-007: distinguish "not a TCGA type" from "study exists but no expression data".
+            # Provide actionable guidance rather than a terse error.
+            upper = cancer.upper()
+            _known_non_tcga = {
+                "CLL": "CLL (chronic lymphocytic leukemia) is not a TCGA cancer type. "
+                "Most CLL studies in cBioPortal contain only mutation data (WES), not mRNA expression. "
+                "Use CancerPrognosis_search_studies with keyword='CLL' to see what studies are available.",
+                "CHRONIC LYMPHOCYTIC LEUKEMIA": "CLL is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='leukemia' to find available studies.",
+                "SLL": "SLL/CLL is not a TCGA cancer type. Most available studies are WES-only (no expression).",
+                "MM": "Multiple myeloma (MM) is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='myeloma' to find expression studies.",
+                "MULTIPLE MYELOMA": "Multiple myeloma is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='myeloma' to find expression studies.",
+                "FL": "Follicular lymphoma (FL) is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='follicular' to find studies.",
+                "MCL": "Mantle cell lymphoma (MCL) is not a TCGA cancer type. "
+                "Use CancerPrognosis_search_studies with keyword='mantle' to find studies.",
+            }
+            specific_msg = _known_non_tcga.get(upper) or _known_non_tcga.get(
+                " ".join(cancer.upper().split())
+            )
+            if specific_msg:
+                return {"status": "error", "error": specific_msg}
+            # Generic case: not in TCGA and no specific guidance
+            tcga_types = sorted(TCGA_STUDY_MAP.keys())
             return {
                 "status": "error",
-                "error": "No mRNA expression profile found for {} ({})".format(
-                    cancer, study_id
-                ),
+                "error": (
+                    "No mRNA expression profile found for '{}' (resolved to study_id='{}')."
+                    " If this is a TCGA cancer type, use one of the 33 supported codes: {}."
+                    " For non-TCGA studies, use CancerPrognosis_search_studies to find"
+                    " the correct study_id and confirm it has an mRNA expression profile."
+                ).format(cancer, study_id, ", ".join(tcga_types)),
             }
         profile_id, profile_name = profile_result
 
@@ -612,18 +685,9 @@ class CancerPrognosisTool(BaseTool):
                 "Deduplicate by keeping only the primary tumor sample (-01 suffix) before merging.",
             }
 
-        # BUG-53A-015: warn explicitly when returned sample count is less than total samples
-        # with expression data. Previously both n_samples_with_expression_data and
-        # n_samples_returned were returned as metadata fields but no warning was emitted,
-        # so users didn't realize they were getting a truncated dataset.
-        truncation_warning = ""
-        if len(values) > max_samples:
-            truncation_warning = (
-                " TRUNCATED: Returning {returned} of {total} samples with expression data. "
-                "Set max_samples={total} (up to 2000) to retrieve the full dataset.".format(
-                    returned=max_samples, total=len(values)
-                )
-            )
+        # BUG-53A-015 / BUG-56A-005: truncation is now surfaced at the top-level response via
+        # `truncated` and `truncation_note` fields (see bottom of function). Do not embed it
+        # in the note string to avoid duplicate information in two places.
 
         result_data: Dict[str, Any] = {
             "study_id": study_id,
@@ -650,8 +714,8 @@ class CancerPrognosisTool(BaseTool):
                 "max": round(sorted_vals[-1], 4),
             },
             "samples": values[:max_samples],
-            "note": "Values are from {} profile ({}). Use with Survival tools for expression-survival analysis.{}{}".format(
-                profile_id, expression_units, truncation_warning, multi_sample_note
+            "note": "Values are from {} profile ({}). Use with Survival tools for expression-survival analysis.{}".format(
+                profile_id, expression_units, multi_sample_note
             ),
         }
         if duplicate_aliquot_warning is not None:

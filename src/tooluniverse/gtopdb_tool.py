@@ -493,6 +493,22 @@ class GtoPdbRESTTool(BaseTool):
                                 f"searching with full gene symbols like '{query}1', '{query}2'."
                             )
 
+            # BUG-59B-002: when an explicit target_id was provided and interactions is empty,
+            # warn the user — the target ID may not exist in GtoPdb (the API returns HTTP 200
+            # with [] for non-existent targets, indistinguishable from "target has no data").
+            import re as _re_gtopdb
+
+            _tid_match = _re_gtopdb.search(r"/targets/(\d+)/interactions", url)
+            if _tid_match and isinstance(data, list) and len(data) == 0:
+                result["warning"] = (
+                    f"No interactions found for target_id={_tid_match.group(1)}. "
+                    "This may mean (a) the target has no pharmacological data in GtoPdb, "
+                    "OR (b) the target ID is invalid (GtoPdb returns an empty list for "
+                    "non-existent target IDs without an error). "
+                    "Verify the target exists using GtoPdb_search_targets(name='...') "
+                    "and confirm the returned targetId before calling get_interactions."
+                )
+
             # BUG-35A-02: add top-level queried_target summary for interactions endpoint
             # so users can immediately verify they're getting the right target's data
             if isinstance(data, list) and data and "/interactions" in url:
@@ -521,8 +537,8 @@ class GtoPdbRESTTool(BaseTool):
                     )
                     result["coverage_note"] = (
                         "GtoPdb interactions list pharmacological research compounds — approved "
-                        "drugs for this target may not be represented. For approved drugs and "
-                        "clinical compounds, use ChEMBL_get_drug_mechanisms or "
+                        "drugs for this target are not represented in these results. For approved "
+                        "drugs and clinical compounds, use ChEMBL_get_drug_mechanisms or "
                         f"ChEMBL_search_compounds with target_name='{_chembl_target}'."
                     )
 

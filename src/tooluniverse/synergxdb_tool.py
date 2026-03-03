@@ -6,7 +6,7 @@ synergy screening data across multiple cancer cell line datasets.
 
 SYNERGxDB integrates 22,507 unique drug combinations (1977 compounds)
 screened against 151 cancer cell lines from 9 major studies including
-NCI-ALMANAC, MERCK, and AstraZeneca.
+NCI-ALMANAC, MERCK, MIT-MELANOMA, VISAGE, DECREASE, YALE-TNBC, YALE-PDAC, STANFORD, and CLOUD.
 
 API base: https://synergxdb.ca/api/
 No authentication required.
@@ -234,9 +234,39 @@ class SYNERGxDBTool(BaseTool):
         # BUG-46B-05: normalize common tissue aliases to SYNERGxDB column values
         if sample:
             sample = self._TISSUE_ALIASES.get(sample.lower(), sample)
+            # BUG-59A-009: validate tissue at input — unrecognized tissue silently returns 0
+            # results when both drugs are found, giving a misleading "not tested together" message.
+            _valid_tissues = set(self._TISSUE_ALIASES.values())
+            _valid_tissues.update(
+                {
+                    "colorectal",
+                    "blood",
+                    "breast",
+                    "lung",
+                    "ovary",
+                    "skin",
+                    "CNS",
+                    "prostate",
+                    "kidney",
+                    "pancreas",
+                    "gastric",
+                }
+            )
+            if sample not in _valid_tissues and sample.lower() not in {
+                t.lower() for t in _valid_tissues
+            }:
+                return {
+                    "status": "error",
+                    "error": (
+                        f"Tissue/cancer type '{sample}' is not recognized in SYNERGxDB. "
+                        f"Valid tissue names: {', '.join(sorted(_valid_tissues))}. "
+                        "Remove the tissue filter to search across all tissues."
+                    ),
+                }
         dataset = arguments.get("dataset")
         page = arguments.get("page", 1)
-        per_page = arguments.get("per_page", 20)
+        # BUG-59A-008/59B-005: accept "limit" (ToolUniverse convention) as alias for "per_page"
+        per_page = arguments.get("limit") or arguments.get("per_page", 20)
 
         # BUG-43A-01/02: accept drug_name_1/drug_name_2 (and intuitive drug1/drug2 aliases)
         # that auto-resolve to integer drug IDs via the /drugs/ endpoint.
@@ -356,7 +386,8 @@ class SYNERGxDBTool(BaseTool):
                 msg = (
                     f"No combination data found: drug IDs {drug_id_1} and {drug_id_2} were both "
                     "found in SYNERGxDB but this specific combination was not tested together in "
-                    "any of the 9 integrated datasets (NCI-ALMANAC, MERCK, AstraZeneca, etc.). "
+                    "any of the 9 integrated datasets (NCI-ALMANAC, MERCK, MIT-MELANOMA, VISAGE, "
+                    "DECREASE, YALE-TNBC, YALE-PDAC, STANFORD, CLOUD). "
                     "Try SYNERGxDB_search_combos with only one drug_id to see what combinations "
                     "each drug has been tested in." + folfox_hint
                 )
@@ -368,7 +399,7 @@ class SYNERGxDBTool(BaseTool):
                 # in any tissue. Show available tissues so the user knows the real situation.
                 if sample or dataset:
                     probe = self._make_request(
-                        "combos/", {id_param: found_id, "page": 1, "perPage": 20}
+                        "combos/", {id_param: found_id, "page": 1, "perPage": 200}
                     )
                     if probe.get("ok") and probe.get("data"):
                         probe_data = probe["data"]
@@ -392,7 +423,7 @@ class SYNERGxDBTool(BaseTool):
                         tissue_str = (
                             ", ".join(f"'{t}'" for t in tissues)
                             if tissues
-                            else "none in first 20 records"
+                            else "none in first 200 records"
                         )
                         source_str = ", ".join(sources) if sources else "unknown"
                         # BUG-52B-004/006: for irinotecan specifically, hint that its
@@ -422,7 +453,7 @@ class SYNERGxDBTool(BaseTool):
                         msg = (
                             f"No combination data found for drug ID {found_id}{filter_desc}. "
                             f"This drug has no data for the requested filter. "
-                            f"Available tissues in the first 20 records: {tissue_str} "
+                            f"Available tissues in the first 200 records: {tissue_str} "
                             f"(sources: {source_str}). "
                             f"Run SYNERGxDB_search_combos with only {id_param}={found_id} "
                             f"(no tissue/dataset filter) to see all available combinations."
@@ -432,7 +463,8 @@ class SYNERGxDBTool(BaseTool):
                         msg = (
                             f"No combination data found for drug ID {found_id} in SYNERGxDB. "
                             "This drug has no tested combinations in any of the 9 integrated "
-                            "screening studies (NCI-ALMANAC, MERCK, AstraZeneca, etc.)."
+                            "screening studies (NCI-ALMANAC, MERCK, MIT-MELANOMA, VISAGE, "
+                            "DECREASE, YALE-TNBC, YALE-PDAC, STANFORD, CLOUD)."
                         )
                 else:
                     msg = (
@@ -441,10 +473,40 @@ class SYNERGxDBTool(BaseTool):
                         "Use SYNERGxDB_list_datasets to see available data."
                     )
             else:
+                # BUG-57A-003: add BCL2 inhibitor hint when relevant drug names are queried
+                _drug_q = " ".join(
+                    str(arguments.get(k, ""))
+                    for k in (
+                        "drug_name_1",
+                        "drug1",
+                        "drug_name_2",
+                        "drug2",
+                        "drug_name",
+                    )
+                ).lower()
+                _bcl2_hint = ""
+                if any(
+                    kw in _drug_q
+                    for kw in (
+                        "venetoclax",
+                        "navitoclax",
+                        "bcl-2",
+                        "bcl2",
+                        "abt-199",
+                        "abt-263",
+                    )
+                ):
+                    _bcl2_hint = (
+                        " Note: BCL2 inhibitors such as venetoclax (ABT-199) and navitoclax "
+                        "(ABT-263) are not in the NCI-ALMANAC cytotoxic screen. "
+                        "SYNERGxDB does not cover targeted agent combinations unless they appear "
+                        "in one of the 9 integrated studies. Use CIViC or PharmacoDB for "
+                        "clinical evidence on BCL2 inhibitor combinations."
+                    )
                 msg = (
                     "No combination data found for the given parameters. "
                     "SYNERGxDB covers cytotoxic chemotherapy combinations from 9 studies; "
-                    "use SYNERGxDB_list_drugs to verify drug availability."
+                    "use SYNERGxDB_list_drugs to verify drug availability." + _bcl2_hint
                 )
             return {
                 "status": "success",
