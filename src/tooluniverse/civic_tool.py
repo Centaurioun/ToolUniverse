@@ -401,9 +401,8 @@ class CIViCTool(BaseTool):
 
             # BUG-50A-001: warn when civic_search_evidence_items combined
             # molecular_profile+disease filter returns 0 results.
-            # CIViC GraphQL applies AND across all filter params, but disease names
-            # must match CIViC's exact taxonomy (e.g., "Chronic Myelogenous Leukemia,
-            # BCR-ABL1+" not "CML"). A combined filter easily returns nothing silently.
+            # BUG-52A-004: auto-probe with molecular_profile only to surface the actual
+            # CIViC disease names that have evidence, so users can correct the disease name.
             if tool_name == "civic_search_evidence_items":
                 mol_profile = arguments.get("molecular_profile")
                 disease = arguments.get("disease") or arguments.get("disease_name")
@@ -412,17 +411,62 @@ class CIViCTool(BaseTool):
                         result.get("data", {}).get("evidenceItems", {}).get("nodes", [])
                     )
                     if len(evidence_nodes) == 0:
+                        # Auto-probe: re-run without disease filter to find actual disease names
+                        actual_diseases: list = []
+                        try:
+                            probe_args = {
+                                k: v
+                                for k, v in arguments.items()
+                                if k not in ("disease", "disease_name")
+                            }
+                            probe_args["limit"] = 50
+                            probe_payload = self._build_graphql_query(probe_args)
+                            probe_resp = requests.post(
+                                CIVIC_GRAPHQL_URL,
+                                json=probe_payload,
+                                timeout=self.timeout,
+                                headers={
+                                    "Content-Type": "application/json",
+                                    "Accept": "application/json",
+                                },
+                            )
+                            probe_nodes = (
+                                probe_resp.json()
+                                .get("data", {})
+                                .get("evidenceItems", {})
+                                .get("nodes", [])
+                            )
+                            actual_diseases = sorted(
+                                {
+                                    node.get("disease", {}).get("name", "")
+                                    for node in probe_nodes
+                                    if node.get("disease", {}).get("name")
+                                }
+                            )
+                        except Exception:
+                            pass
+
+                        if actual_diseases:
+                            disease_hint = (
+                                f" CIViC has {len(probe_nodes)} evidence items for "
+                                f"'{mol_profile}' across these diseases: "
+                                + ", ".join(f"'{d}'" for d in actual_diseases[:10])
+                                + ". Use one of these exact disease names."
+                            )
+                        else:
+                            disease_hint = (
+                                f" Try retrying with only molecular_profile='{mol_profile}' "
+                                "(remove the disease filter) to see all evidence."
+                            )
                         result["warning"] = (
                             f"No evidence items found for molecular_profile='{mol_profile}' "
                             f"AND disease='{disease}'. CIViC applies AND logic across all "
                             "filters, and disease names must match CIViC's exact taxonomy "
-                            "(e.g., 'Pancreatic Ductal Carcinoma' not 'Pancreatic Adenocarcinoma', "
-                            "'Non-small Cell Lung Carcinoma' not 'NSCLC', "
-                            "'Chronic Myelogenous Leukemia, BCR-ABL1+' not 'CML'). "
-                            f"Try retrying with only molecular_profile='{mol_profile}' "
-                            "(remove the disease filter) to see all evidence, then filter "
-                            "manually. Use civic_search_molecular_profiles to confirm the "
-                            "exact molecular profile name."
+                            "(e.g., 'Lung Non-small Cell Carcinoma' not 'NSCLC' or "
+                            "'Non-small Cell Lung Carcinoma', "
+                            "'Chronic Myelogenous Leukemia, BCR-ABL1+' not 'CML', "
+                            "'Pancreatic Ductal Carcinoma' not 'Pancreatic Adenocarcinoma')."
+                            + disease_hint
                         )
 
             return result

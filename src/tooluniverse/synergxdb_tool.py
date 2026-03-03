@@ -159,6 +159,7 @@ class SYNERGxDBTool(BaseTool):
 
     # BUG-45A-03: SYNERGxDB stores some drugs under IUPAC/chemical names instead of
     # common drug names. Map common synonyms to SYNERGxDB stored names.
+    # BUG-52B-005: add common "5-FU" aliases for fluorouracil.
     _DRUG_SYNONYMS: Dict[str, str] = {
         "cisplatin": "diamminedichloroplatinum",
         "cis-platinum": "diamminedichloroplatinum",
@@ -174,6 +175,11 @@ class SYNERGxDBTool(BaseTool):
         "herceptin": "trastuzumab",
         "avastin": "bevacizumab",
         "rituxan": "rituximab",
+        # BUG-52B-005: "5-FU" is the universal clinical shorthand for fluorouracil
+        "5-fu": "fluorouracil",
+        "5fu": "fluorouracil",
+        "5-fluorouracil": "fluorouracil",
+        "5 fluorouracil": "fluorouracil",
     }
 
     def _resolve_drug_id_by_name(self, name: str) -> Optional[int]:
@@ -387,6 +393,30 @@ class SYNERGxDBTool(BaseTool):
                             else "none in first 20 records"
                         )
                         source_str = ", ".join(sources) if sources else "unknown"
+                        # BUG-52B-004/006: for irinotecan specifically, hint that its
+                        # active metabolite SN-38 (stored as "SN 38 Lactone") may have
+                        # data in tissues where irinotecan itself is absent.
+                        drug_name_requested = str(
+                            arguments.get("drug_name_1")
+                            or arguments.get("drug1")
+                            or arguments.get("drug_name_2")
+                            or arguments.get("drug2")
+                            or ""
+                        ).lower()
+                        metabolite_hint = ""
+                        if drug_name_requested in {
+                            "irinotecan",
+                            "camptosar",
+                            "cpt-11",
+                            "camptothecin-11",
+                        }:
+                            metabolite_hint = (
+                                " Note: Irinotecan is a prodrug; its active metabolite "
+                                "SN-38 is stored in SYNERGxDB as 'SN 38 Lactone' (drug ID 87, "
+                                "datasets: STANFORD, YALE-TNBC, MERCK, NCI-ALMANAC, YALE-PDAC). "
+                                "Try SYNERGxDB_search_combos with drug_name_1='SN 38 Lactone' "
+                                "for combination data across more tissues."
+                            )
                         msg = (
                             f"No combination data found for drug ID {found_id}{filter_desc}. "
                             f"This drug has no data for the requested filter. "
@@ -394,6 +424,7 @@ class SYNERGxDBTool(BaseTool):
                             f"(sources: {source_str}). "
                             f"Run SYNERGxDB_search_combos with only {id_param}={found_id} "
                             f"(no tissue/dataset filter) to see all available combinations."
+                            + metabolite_hint
                         )
                     else:
                         msg = (

@@ -170,9 +170,36 @@ class GtoPdbRESTTool(BaseTool):
                     timeout=self.timeout,
                     max_attempts=2,
                 )
+                # BUG-52B-002: GtoPdb returns HTTP 404 (not 200) when a gene_symbol
+                # doesn't match any target name. Previously, resp.status_code != 200
+                # caused the entire lookup block to be skipped silently, leaving
+                # gene_symbol in arguments → _build_url adds it as an unknown query
+                # param → API ignores it → returns ALL interactions (e.g., 5-HT1A
+                # receptor data for gene_symbol="MAP2K1"). Fix: handle 404 by returning
+                # early with a helpful message, and validate list type on 200.
+                if resp.status_code == 404 or (
+                    resp.status_code == 200 and not isinstance(resp.json(), list)
+                ):
+                    return {
+                        "status": "success",
+                        "data": [],
+                        "count": 0,
+                        "message": (
+                            f"No GtoPdb target found for gene_symbol='{gene_symbol}'. "
+                            "GtoPdb targets are indexed by pharmacological receptor/enzyme "
+                            "names and may not recognize all HGNC gene symbols. "
+                            f"Try GtoPdb_search_targets with a descriptive name "
+                            f"(e.g., query='MEK1' or 'MAP2K1' or 'MEK' for MAP2K1). "
+                            "Note: many kinases and signaling enzymes (MAP2K1/MEK1, "
+                            "MAP2K2/MEK2, MAPK1/ERK2, MAPK3/ERK1, etc.) have limited "
+                            "or no interaction data in GtoPdb — use "
+                            "ChEMBL_get_drug_mechanisms or ChEMBL_search_compounds "
+                            "for approved inhibitors of MAP kinase pathway proteins."
+                        ),
+                    }
                 if resp.status_code == 200:
                     targets = resp.json()
-                    if targets:
+                    if isinstance(targets, list) and targets:
                         # Prefer exact abbreviation match (e.g., "KRAS" → KRAS entry)
                         gene_upper = gene_symbol.upper()
                         target_id = None
