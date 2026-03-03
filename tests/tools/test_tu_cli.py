@@ -4074,24 +4074,30 @@ class TestRound20Fixes:
 
     # R20B: next_offset=None when limit=0 (count probe, not a real cursor)
     @pytest.mark.unit
-    def test_grep_limit_zero_next_offset_is_none(self, monkeypatch, tu, capsys):
-        """R20B: grep --limit 0 returns next_offset: null (count probe, not a cursor)."""
+    def test_grep_limit_zero_next_offset_is_zero(self, monkeypatch, tu, capsys):
+        """BUG-23A-02: grep --limit 0 with has_more=True returns next_offset=0 (not null)."""
         from tooluniverse.cli import cmd_grep
-        out, _ = _run(monkeypatch, cmd_grep,
-                      _args(pattern="protein", limit=0, json=True), tu, capsys)
+
+        out, _ = _run(
+            monkeypatch, cmd_grep, _args(pattern="protein", limit=0, json=True), tu, capsys
+        )
         d = _j(out)
         assert d["has_more"] is True
-        assert d.get("next_offset") is None, "limit=0 probe should have next_offset=None"
+        # BUG-23A-02: next_offset=0 so callers can use it directly as --offset
+        assert d.get("next_offset") == 0, "limit=0 probe with has_more=True should return next_offset=0"
 
     @pytest.mark.unit
-    def test_list_limit_zero_next_offset_is_none(self, monkeypatch, tu, capsys):
-        """R20B: list --limit 0 returns next_offset: null (count probe)."""
+    def test_list_limit_zero_next_offset_is_zero(self, monkeypatch, tu, capsys):
+        """BUG-23A-02: list --limit 0 with has_more=True returns next_offset=0 (not null)."""
         from tooluniverse.cli import cmd_list
-        out, _ = _run(monkeypatch, cmd_list,
-                      _args(mode="names", limit=0, json=True), tu, capsys)
+
+        out, _ = _run(
+            monkeypatch, cmd_list, _args(mode="names", limit=0, json=True), tu, capsys
+        )
         d = _j(out)
         assert d["has_more"] is True
-        assert d.get("next_offset") is None, "limit=0 probe should have next_offset=None"
+        # BUG-23A-02: next_offset=0 so callers can use it directly as --offset
+        assert d.get("next_offset") == 0, "limit=0 probe with has_more=True should return next_offset=0"
 
     @pytest.mark.unit
     def test_grep_pagination_next_offset_usable(self, monkeypatch, tu, capsys):

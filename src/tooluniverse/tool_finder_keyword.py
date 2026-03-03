@@ -812,10 +812,11 @@ class ToolFinderKeyword(BaseTool):
                     "offset": offset,
                     "has_more": has_more,
                     # BUG-R19A-02: include next_offset so pipelines don't recompute
-                    # offset + len(tools). None when limit=0 (count probe) or no more pages.
+                    # offset + len(tools). BUG-23A-02: when limit=0 and has_more=True,
+                    # set next_offset=0 so callers can pass it directly as --offset.
                     "next_offset": (offset + len(matching_tools))
                     if (has_more and limit != 0)
-                    else None,
+                    else (0 if has_more else None),
                     "categories_filtered": categories,
                     "processing_info": {
                         "query_tokens": len(query_tokens),

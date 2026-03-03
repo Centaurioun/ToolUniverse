@@ -186,11 +186,11 @@ class GrepToolsTool(BaseTool):
             # has_more: true at limit=0 correctly signals "there is data if you raise limit".
             "has_more": has_more,
             # BUG-R19A-02: include next_offset so pipelines don't have to recompute
-            # offset+len(tools) — None when no more pages or when limit=0 (count probe,
-            # no real cursor since zero items were returned).
+            # offset+len(tools). BUG-23A-02: when limit=0 (count probe) and has_more=True,
+            # set next_offset=0 so callers can pass it directly as --offset.
             "next_offset": (offset + len(matching_tools))
             if (has_more and limit != 0)
-            else None,
+            else (0 if has_more else None),
             "pattern": pattern,
             "field": field,
             "search_mode": search_mode,
@@ -353,10 +353,11 @@ class ListToolsTool(BaseTool):
                         # whether data exists (consistent with grep/find behavior).
                         "has_more": _has_more_names,
                         # BUG-R19A-02: include next_offset for pipeline convenience.
-                        # None when limit=0 (count probe — no useful cursor to return).
+                        # BUG-23A-02: when limit=0 (count probe) and has_more=True,
+                        # set next_offset=0 so callers can pass it as --offset.
                         "next_offset": (offset + len(tool_names))
                         if (_has_more_names and limit != 0)
-                        else None,
+                        else (0 if _has_more_names else None),
                         "tools": tool_names,
                     }
 
