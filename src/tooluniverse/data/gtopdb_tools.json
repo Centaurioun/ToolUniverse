@@ -231,7 +231,7 @@
   },
   {
     "name": "GtoPdb_get_interactions",
-    "description": "Get pharmacological interactions between targets and ligands from the Guide to Pharmacology database. Provide targetId (from GtoPdb_search_targets) or ligandId (from GtoPdb_search_ligands) to filter interactions. Returns binding affinity (Ki, Kd, IC50, EC50), action type (agonist, antagonist, inhibitor, etc.), species, and assay information. Essential for drug discovery and pharmacology research. No authentication required.",
+    "description": "Get pharmacological interactions between targets and ligands from the Guide to Pharmacology database. Provide targetId (from GtoPdb_search_targets) or ligandId (from GtoPdb_search_ligands) to filter interactions. Returns binding affinity (Ki, Kd, IC50, EC50), action type (agonist, antagonist, inhibitor, etc.), species, and assay information. NOTE: GtoPdb coverage focuses on GPCRs, ion channels, nuclear receptors, and enzymes; kinase inhibitors (EGFR, BRAF, ALK, VEGFR inhibitors) have limited interaction data — use ChEMBL_get_drug_mechanisms for those instead. No authentication required.",
     "parameter": {
       "type": "object",
       "properties": {

@@ -119,7 +119,7 @@ class CIViCTool(BaseTool):
         return None
 
     def _get_variants_for_gene_id(
-        self, gene_id: int, limit: int = 50
+        self, gene_id: int, limit: int = 200
     ) -> Dict[str, Any]:
         """Fetch variants for a given CIViC gene_id via GraphQL."""
         payload = {
@@ -170,7 +170,7 @@ class CIViCTool(BaseTool):
                 arguments = dict(arguments)
                 arguments["gene_id"] = gene_id
             return self._get_variants_for_gene_id(
-                arguments["gene_id"], arguments.get("limit", 50)
+                arguments["gene_id"], arguments.get("limit", 200)
             )
 
         # BUG-40B-01: civic_search_evidence_items — warn on unsupported gene/variant params.
@@ -212,7 +212,7 @@ class CIViCTool(BaseTool):
                 if gene_id is None:
                     return {"error": f"Gene '{gene_name}' not found in CIViC database"}
                 result = self._get_variants_for_gene_id(
-                    gene_id, arguments.get("limit", 50)
+                    gene_id, arguments.get("limit", 200)
                 )
                 # If query also provided, filter returned variants by name client-side
                 if query_term and isinstance(result.get("data"), dict):

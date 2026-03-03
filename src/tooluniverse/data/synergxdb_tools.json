@@ -2,7 +2,7 @@
   {
     "name": "SYNERGxDB_search_combos",
     "type": "SYNERGxDBTool",
-    "description": "Search drug combination synergy scores in SYNERGxDB. Returns synergy metrics (Bliss, Loewe, HSA, ZIP) for drug pairs across cancer cell lines. Filter by drug IDs, cell line/tissue, and dataset. The database integrates 22,507 unique drug combinations from 9 major studies (NCI-ALMANAC, MERCK, AstraZeneca). Positive ZIP scores indicate synergy. Use list_drugs first to find drug IDs.",
+    "description": "Search drug combination synergy scores in SYNERGxDB. Returns synergy metrics (Bliss, Loewe, HSA, ZIP) for drug pairs across cancer cell lines. Filter by drug IDs, cell line/tissue, and dataset. The database integrates 22,507 unique drug combinations from 9 major studies (NCI-ALMANAC, MERCK, AstraZeneca). Positive ZIP scores indicate synergy. Use list_drugs first to find drug IDs. NOTE: SYNERGxDB focuses on cytotoxic chemotherapy combinations; most targeted therapies and biologics (e.g., BRAF/MEK/EGFR inhibitors, immune checkpoint inhibitors, HER2 antibodies) approved after 2018 are not included.",
     "parameter": {
       "type": "object",
       "properties": {

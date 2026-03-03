@@ -21,6 +21,10 @@
           "type": "string",
           "description": "Alias for cancer. TCGA cancer type abbreviation (e.g., 'BRCA', 'LUAD', 'COAD', 'GBM', 'COADREAD') or cBioPortal study ID."
         },
+        "study_id": {
+          "type": "string",
+          "description": "Alias for cancer. cBioPortal study ID (e.g., 'brca_tcga', 'coadread_tcga', 'luad_tcga')."
+        },
         "max_patients": {
           "type": [
             "integer",
@@ -139,6 +143,10 @@
         "cancer_type": {
           "type": "string",
           "description": "Alias for cancer. TCGA cancer type (e.g., 'BRCA', 'LUAD', 'COADREAD') or cBioPortal study ID."
+        },
+        "study_id": {
+          "type": "string",
+          "description": "Alias for cancer. cBioPortal study ID (e.g., 'brca_tcga', 'luad_tcga')."
         },
         "gene": {
           "type": "string",
@@ -365,6 +373,10 @@
         "cancer_type": {
           "type": "string",
           "description": "Alias for cancer. TCGA cancer type abbreviation (e.g., 'BRCA', 'LUAD', 'COADREAD')."
+        },
+        "study_id": {
+          "type": "string",
+          "description": "Alias for cancer. cBioPortal study ID (e.g., 'brca_tcga', 'luad_tcga')."
         }
       },
       "required": []
