@@ -384,6 +384,11 @@
         "gene_id": {
           "type": "string",
           "description": "A gene identifier such as gene symbol (e.g., 'TP53') or database ID."
+        },
+        "rows": {
+          "type": "integer",
+          "description": "Maximum number of annotations to return. Default: 100. Use a lower value (e.g., 25) for genes with many annotations like TP53.",
+          "default": 100
         }
       },
       "required": [
