@@ -181,6 +181,11 @@ def _render_list(d: dict) -> str:
             more_hint = f"  (more — next: --offset {next_off})"
         elif offset and count:
             more_hint = "  (end of results)"
+        elif count == total and total > 50:
+            # BUG-24B-11: large unfiltered list — suggest paginating with --limit
+            more_hint = (
+                "  (tip: use --limit N to paginate, or --categories <name> to filter)"
+            )
         else:
             more_hint = ""
         return f"\n{count} of {total} tools{range_str}{more_hint}"

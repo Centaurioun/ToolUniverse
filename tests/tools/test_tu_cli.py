@@ -4969,6 +4969,44 @@ class TestRound23BRemainingFixes:
         assert "quotes" not in err.lower()
 
 
+class TestRound24MoreFixes2:
+    """Tests for BUG-24B-11 (large list shows paging hint)."""
+
+    @pytest.fixture
+    def tu(self):
+        from tooluniverse import ToolUniverse
+
+        tu = ToolUniverse()
+        tu.load_tools()
+        return tu
+
+    @pytest.mark.unit
+    def test_list_all_tools_shows_paging_hint(self, monkeypatch, tu, capsys):
+        """BUG-24B-11: tu list with no limit on large catalog shows --limit hint."""
+        import unittest.mock as mock
+        from tooluniverse.cli import cmd_list
+
+        args = _args(mode="names", limit=None, offset=0, categories=None, json=False)
+        with mock.patch("tooluniverse.cli._get_tu", return_value=tu):
+            cmd_list(args)
+        out, _ = capsys.readouterr()
+        # Should suggest --limit when output is very long
+        assert "--limit" in out or "limit" in out.lower()
+
+    @pytest.mark.unit
+    def test_list_small_result_no_paging_hint(self, monkeypatch, tu, capsys):
+        """BUG-24B-11: small result (<=50 tools) should NOT show paging hint."""
+        import unittest.mock as mock
+        from tooluniverse.cli import cmd_list
+
+        args = _args(mode="names", limit=5, offset=0, categories=None, json=False)
+        with mock.patch("tooluniverse.cli._get_tu", return_value=tu):
+            cmd_list(args)
+        out, _ = capsys.readouterr()
+        # No paging hint needed when already paginating with --limit
+        assert "tip: use --limit" not in out
+
+
 class TestRound24MoreFixes:
     """Tests for BUG-24B-02 (--quiet flag suppresses API key warnings)."""
 
