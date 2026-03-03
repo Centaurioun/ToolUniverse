@@ -13,7 +13,11 @@
         },
         "terms": {
           "type": "string",
-          "description": "Search query - gene name (e.g., BRAF), mutation (e.g., V600E), or mutation ID (e.g., COSM476)"
+          "description": "Search query - gene name (e.g., BRAF), mutation (e.g., V600E), or mutation ID (e.g., COSM476). Aliases: query or gene also accepted."
+        },
+        "query": {
+          "type": "string",
+          "description": "Alias for terms. Search query - gene name, mutation, or COSMIC ID."
         },
         "max_results": {
           "type": "integer",

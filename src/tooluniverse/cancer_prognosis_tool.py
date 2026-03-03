@@ -83,8 +83,20 @@ class CancerPrognosisTool(BaseTool):
 
     def run(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         operation = arguments.get("operation")
+        # Infer operation from context when not provided
         if not operation:
-            return {"status": "error", "error": "Missing required parameter: operation"}
+            if (
+                "keyword" in arguments
+                or "cancer_type" in arguments
+                or "cancer" in arguments
+                and "gene" not in arguments
+            ):
+                operation = "search_studies"
+            else:
+                return {
+                    "status": "error",
+                    "error": "Missing required parameter: operation. Use one of: get_survival_data, get_gene_expression, search_studies, get_study_summary",
+                }
 
         operation_handlers = {
             "get_survival_data": self._get_survival_data,
@@ -435,11 +447,15 @@ class CancerPrognosisTool(BaseTool):
     def _search_studies(self, arguments):
         # type: (Dict[str, Any]) -> Dict[str, Any]
         """Search cBioPortal studies by keyword."""
-        keyword = arguments.get("keyword")
+        keyword = (
+            arguments.get("keyword")
+            or arguments.get("cancer_type")
+            or arguments.get("cancer")
+        )
         if not keyword:
             return {
                 "status": "error",
-                "error": "keyword is required (e.g., 'breast', 'lung', 'TCGA')",
+                "error": "keyword is required (e.g., 'breast', 'lung', 'TCGA'). Also accepted: cancer_type or cancer.",
             }
 
         limit = min(int(arguments.get("limit", 20)), 100)

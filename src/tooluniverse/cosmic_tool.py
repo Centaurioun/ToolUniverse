@@ -59,9 +59,16 @@ class COSMICTool(BaseTool):
                 - max_results: Maximum results to return (default 20, max 500)
                 - genome_build: Genome build version (37 or 38, default 37)
         """
-        terms = arguments.get("terms", "")
+        terms = (
+            arguments.get("terms")
+            or arguments.get("query")
+            or arguments.get("gene", "")
+        )
         if not terms:
-            return {"status": "error", "error": "Missing required parameter: terms"}
+            return {
+                "status": "error",
+                "error": "Missing required parameter: terms (or query/gene)",
+            }
 
         max_results = min(arguments.get("max_results", 20), 500)
         genome_build = arguments.get("genome_build", 37)
