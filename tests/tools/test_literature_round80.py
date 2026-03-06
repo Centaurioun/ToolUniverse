@@ -36,6 +36,19 @@ class TestArXivQueryBuilder(unittest.TestCase):
         result = self.tool._build_search_query("au:Hinton")
         self.assertEqual(result, "au:Hinton")
 
+    def test_author_multiword_auto_quoted(self):
+        """Feature-82C: au:FirstName LastName auto-quoted for arXiv API."""
+        result = self.tool._build_search_query("au:Shanghua Gao")
+        self.assertEqual(result, 'au:"Shanghua Gao"')
+
+    def test_author_already_quoted_unchanged(self):
+        result = self.tool._build_search_query('au:"Geoffrey Hinton"')
+        self.assertEqual(result, 'au:"Geoffrey Hinton"')
+
+    def test_title_multiword_auto_quoted(self):
+        result = self.tool._build_search_query("ti:protein folding")
+        self.assertEqual(result, 'ti:"protein folding"')
+
     def test_category_query_passes_through(self):
         result = self.tool._build_search_query("cat:cs.AI AND ti:transformer")
         self.assertEqual(result, "cat:cs.AI AND ti:transformer")
@@ -95,7 +108,7 @@ class TestPubMedCitedByEmptyResult(unittest.TestCase):
             self.skipTest("ToolUniverse not available")
 
         try:
-            result = tu.execute_tool("PubMed_get_cited_by", {"pmid": "37461722", "limit": 3})
+            result = tu.run_one_function({"name": "PubMed_get_cited_by", "arguments": {"pmid": "37461722", "limit": 3}})
         except Exception as e:
             self.skipTest(f"API call failed: {e}")
 
@@ -123,14 +136,16 @@ class TestArXivMultiWordLive(unittest.TestCase):
             self.skipTest("ToolUniverse not available")
 
         try:
-            result = tu.execute_tool(
-                "ArXiv_search_papers",
+            result = tu.run_one_function(
                 {
-                    "query": "large language model biomedical",
-                    "sort_by": "submittedDate",
-                    "sort_order": "descending",
-                    "limit": 3,
-                },
+                    "name": "ArXiv_search_papers",
+                    "arguments": {
+                        "query": "large language model biomedical",
+                        "sort_by": "submittedDate",
+                        "sort_order": "descending",
+                        "limit": 3,
+                    },
+                }
             )
         except Exception as e:
             self.skipTest(f"API call failed: {e}")
@@ -150,6 +165,129 @@ class TestArXivMultiWordLive(unittest.TestCase):
             for p in papers
         )
         self.assertTrue(found_relevant, "Results should be relevant to 'large language model'")
+
+
+class TestSemanticScholarLimitNotRequired(unittest.TestCase):
+    """Feature-80B-002: SemanticScholar limit should not be required."""
+
+    def test_limit_not_in_required(self):
+        import json
+
+        json_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "src",
+            "tooluniverse",
+            "data",
+            "semantic_scholar_tools.json",
+        )
+        with open(json_path) as f:
+            tools = json.load(f)
+
+        search_tool = next(
+            t for t in tools if t["name"] == "SemanticScholar_search_papers"
+        )
+        required = search_tool["parameter"]["required"]
+        self.assertIn("query", required)
+        self.assertNotIn("limit", required, "limit should not be required (has default)")
+
+    def test_limit_has_default(self):
+        import json
+
+        json_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "src",
+            "tooluniverse",
+            "data",
+            "semantic_scholar_tools.json",
+        )
+        with open(json_path) as f:
+            tools = json.load(f)
+
+        search_tool = next(
+            t for t in tools if t["name"] == "SemanticScholar_search_papers"
+        )
+        limit_prop = search_tool["parameter"]["properties"]["limit"]
+        self.assertIn("default", limit_prop)
+        self.assertEqual(limit_prop["default"], 5)
+
+
+class TestBaseRESTToolApiName(unittest.TestCase):
+    """Feature-80B-003: BaseRESTTool uses tool config name for error messages."""
+
+    def test_api_name_from_config(self):
+        from tooluniverse.base_rest_tool import BaseRESTTool
+
+        config = {
+            "name": "MyCustomAPI_search",
+            "parameter": {"type": "object", "properties": {}, "required": []},
+            "fields": {"endpoint": "https://example.com/api"},
+        }
+        tool = BaseRESTTool(config)
+        self.assertEqual(tool.api_name, "MyCustomAPI_search")
+
+    def test_api_name_fallback_to_class_name(self):
+        from tooluniverse.base_rest_tool import BaseRESTTool
+
+        config = {
+            "parameter": {"type": "object", "properties": {}, "required": []},
+            "fields": {"endpoint": "https://example.com/api"},
+        }
+        tool = BaseRESTTool(config)
+        # Falls back to class name when no name in config
+        self.assertIn("Base", tool.api_name)
+
+
+class TestPubTator3OptionalParams(unittest.TestCase):
+    """Feature-80B-005: PubTator3 page/page_size not required, have defaults."""
+
+    def test_page_not_required(self):
+        import json
+
+        json_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "src",
+            "tooluniverse",
+            "data",
+            "pubtator_tools.json",
+        )
+        with open(json_path) as f:
+            tools = json.load(f)
+
+        search_tool = next(
+            t for t in tools if t["name"] == "PubTator3_LiteratureSearch"
+        )
+        required = search_tool["parameter"]["required"]
+        self.assertEqual(required, ["query"])
+        self.assertNotIn("page", required)
+        self.assertNotIn("page_size", required)
+
+    def test_page_has_defaults(self):
+        import json
+
+        json_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "src",
+            "tooluniverse",
+            "data",
+            "pubtator_tools.json",
+        )
+        with open(json_path) as f:
+            tools = json.load(f)
+
+        search_tool = next(
+            t for t in tools if t["name"] == "PubTator3_LiteratureSearch"
+        )
+        props = search_tool["parameter"]["properties"]
+        self.assertEqual(props["page"]["default"], 0)
+        self.assertEqual(props["page_size"]["default"], 10)
 
 
 if __name__ == "__main__":

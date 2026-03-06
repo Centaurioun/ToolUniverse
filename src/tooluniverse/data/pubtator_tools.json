@@ -27,9 +27,7 @@
         }
       },
       "required": [
-        "text",
-        "entity_type",
-        "max_results"
+        "text"
       ]
     },
     "fields": {
@@ -66,17 +64,21 @@
         },
         "page": {
           "type": "integer",
-          "description": "Zero-based results page (optional; default = 0)."
+          "description": "Zero-based results page (optional; default = 0).",
+          "default": 0
         },
         "page_size": {
           "type": "integer",
-          "description": "How many PMIDs to return per page (optional; default = 20, maximum = 200)."
+          "description": "How many PMIDs to return per page (optional; default = 10; note: the PubTator3 API always returns 10 per page regardless of this value).",
+          "default": 10
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of results to return (applied client-side). The PubTator3 API returns 10 results per page; this parameter truncates the results to the requested count."
         }
       },
       "required": [
-        "query",
-        "page",
-        "page_size"
+        "query"
       ]
     },
     "fields": {
