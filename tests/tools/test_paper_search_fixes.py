@@ -997,5 +997,500 @@ class TestEuropePMCReturnSchema(unittest.TestCase):
             )
 
 
+# ---------------------------------------------------------------------------
+# Feature-86A-001: ChEMBL_search_drugs pref_name__contains redirect
+# ---------------------------------------------------------------------------
+class TestChEMBLDrugSearchRedirect(unittest.TestCase):
+    """ChEMBL_search_drugs should redirect /drug.json to /molecule.json for pref_name__contains."""
+
+    def setUp(self):
+        from tooluniverse.chem_tool import ChEMBLRESTTool
+
+        self.tool = ChEMBLRESTTool(
+            {
+                "name": "ChEMBL_search_drugs",
+                "fields": {"endpoint": "/drug.json"},
+                "parameter": {"type": "object", "properties": {}, "required": []},
+            }
+        )
+
+    def test_query_redirects_to_molecule(self):
+        url = self.tool._build_url({"query": "ruxolitinib"})
+        self.assertIn("/molecule.json", url)
+        self.assertNotIn("/drug.json", url)
+
+    def test_q_redirects_to_molecule(self):
+        url = self.tool._build_url({"q": "imatinib"})
+        self.assertIn("/molecule.json", url)
+        self.assertNotIn("/drug.json", url)
+
+    def test_pref_name_contains_redirects_to_molecule(self):
+        url = self.tool._build_url({"pref_name__contains": "RUXOLITINIB"})
+        self.assertIn("/molecule.json", url)
+        self.assertNotIn("/drug.json", url)
+
+    def test_no_query_stays_on_drug(self):
+        url = self.tool._build_url({"limit": 10})
+        self.assertIn("/drug.json", url)
+
+
+# ---------------------------------------------------------------------------
+# Feature-86B-002: Orphanet_get_genes subtype fallback
+# ---------------------------------------------------------------------------
+class TestOrphanetGetGenesDirectLookup(unittest.TestCase):
+    """Orphanet_get_genes should try direct orphacode lookup, then subtypes."""
+
+    def setUp(self):
+        from tooluniverse.orphanet_tool import OrphanetTool
+
+        self.tool = OrphanetTool({"name": "Orphanet_get_genes"})
+
+    def test_extract_genes_from_associations(self):
+        associations = [
+            {
+                "Gene": {
+                    "Symbol": "FBN1",
+                    "name": "fibrillin 1",
+                    "GeneType": "gene with protein product",
+                    "Locus": [{"GeneLocus": "15q21.1", "LocusKey": 1}],
+                },
+                "DisorderGeneAssociationType": "Disease-causing germline mutation(s) in",
+                "DisorderGeneAssociationStatus": "Assessed",
+                "SourceOfValidation": "PMID:12345",
+            }
+        ]
+        genes = self.tool._extract_genes_from_associations(associations)
+        self.assertEqual(len(genes), 1)
+        self.assertEqual(genes[0]["Symbol"], "FBN1")
+        self.assertEqual(genes[0]["Name"], "fibrillin 1")
+        self.assertEqual(
+            genes[0]["AssociationType"], "Disease-causing germline mutation(s) in"
+        )
+
+    def test_extract_genes_empty_list(self):
+        genes = self.tool._extract_genes_from_associations([])
+        self.assertEqual(genes, [])
+
+    def test_extract_genes_non_list(self):
+        genes = self.tool._extract_genes_from_associations(None)
+        self.assertEqual(genes, [])
+
+    @patch("tooluniverse.orphanet_tool.requests.get")
+    def test_direct_orphacode_success(self, mock_get):
+        """When direct orphacode endpoint returns genes, use them without subtype search."""
+        name_resp = MagicMock()
+        name_resp.status_code = 200
+        name_resp.json.return_value = {
+            "ORPHAcode": 93,
+            "Preferred term": "Aspartylglucosaminuria",
+        }
+        name_resp.raise_for_status = MagicMock()
+
+        gene_resp = MagicMock()
+        gene_resp.status_code = 200
+        gene_resp.json.return_value = {
+            "data": {
+                "results": {
+                    "DisorderGeneAssociation": [
+                        {
+                            "Gene": {
+                                "Symbol": "AGA",
+                                "name": "aspartylglucosaminidase",
+                                "GeneType": "gene with protein product",
+                                "Locus": [],
+                            },
+                            "DisorderGeneAssociationType": "Disease-causing",
+                            "DisorderGeneAssociationStatus": "Assessed",
+                            "SourceOfValidation": "",
+                        }
+                    ]
+                }
+            }
+        }
+
+        mock_get.side_effect = [name_resp, gene_resp]
+
+        result = self.tool._get_genes({"orpha_code": "93"})
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(len(result["data"]["genes"]), 1)
+        self.assertEqual(result["data"]["genes"][0]["Symbol"], "AGA")
+        self.assertNotIn("subtype_sources", result["data"])
+
+    @patch("tooluniverse.orphanet_tool.requests.get")
+    def test_subtype_fallback_for_parent_code(self, mock_get):
+        """When direct orphacode returns 404, search subtypes by disease name."""
+        name_resp = MagicMock()
+        name_resp.status_code = 200
+        name_resp.json.return_value = {
+            "ORPHAcode": 558,
+            "Preferred term": "Marfan syndrome",
+        }
+        name_resp.raise_for_status = MagicMock()
+
+        direct_resp = MagicMock()
+        direct_resp.status_code = 404
+
+        list_resp = MagicMock()
+        list_resp.status_code = 200
+        list_resp.json.return_value = {
+            "data": {
+                "results": [
+                    {"ORPHAcode": 284963, "Preferred term": "Marfan syndrome type 1"},
+                    {"ORPHAcode": 284973, "Preferred term": "Marfan syndrome type 2"},
+                    {"ORPHAcode": 999, "Preferred term": "Unrelated disease"},
+                ]
+            }
+        }
+
+        sub1_resp = MagicMock()
+        sub1_resp.status_code = 200
+        sub1_resp.json.return_value = {
+            "data": {
+                "results": {
+                    "DisorderGeneAssociation": [
+                        {
+                            "Gene": {
+                                "Symbol": "FBN1",
+                                "name": "fibrillin 1",
+                                "GeneType": "gene with protein product",
+                                "Locus": [],
+                            },
+                            "DisorderGeneAssociationType": "Disease-causing",
+                            "DisorderGeneAssociationStatus": "Assessed",
+                            "SourceOfValidation": "",
+                        }
+                    ]
+                }
+            }
+        }
+
+        sub2_resp = MagicMock()
+        sub2_resp.status_code = 200
+        sub2_resp.json.return_value = {
+            "data": {
+                "results": {
+                    "DisorderGeneAssociation": [
+                        {
+                            "Gene": {
+                                "Symbol": "TGFBR2",
+                                "name": "transforming growth factor beta receptor 2",
+                                "GeneType": "gene with protein product",
+                                "Locus": [],
+                            },
+                            "DisorderGeneAssociationType": "Disease-causing",
+                            "DisorderGeneAssociationStatus": "Assessed",
+                            "SourceOfValidation": "",
+                        }
+                    ]
+                }
+            }
+        }
+
+        mock_get.side_effect = [name_resp, direct_resp, list_resp, sub1_resp, sub2_resp]
+
+        result = self.tool._get_genes({"orpha_code": "558"})
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(len(result["data"]["genes"]), 2)
+        symbols = {g["Symbol"] for g in result["data"]["genes"]}
+        self.assertIn("FBN1", symbols)
+        self.assertIn("TGFBR2", symbols)
+        self.assertIn("subtype_sources", result["data"])
+        self.assertEqual(len(result["data"]["subtype_sources"]), 2)
+
+    @patch("tooluniverse.orphanet_tool.requests.get")
+    def test_deduplicates_genes_across_subtypes(self, mock_get):
+        """Genes shared across subtypes should not be duplicated."""
+        name_resp = MagicMock()
+        name_resp.status_code = 200
+        name_resp.json.return_value = {"Preferred term": "Test disease"}
+        name_resp.raise_for_status = MagicMock()
+
+        direct_resp = MagicMock()
+        direct_resp.status_code = 404
+
+        list_resp = MagicMock()
+        list_resp.status_code = 200
+        list_resp.json.return_value = {
+            "data": {
+                "results": [
+                    {"ORPHAcode": 1, "Preferred term": "Test disease type 1"},
+                    {"ORPHAcode": 2, "Preferred term": "Test disease type 2"},
+                ]
+            }
+        }
+
+        gene_entry = {
+            "Gene": {
+                "Symbol": "GENE1",
+                "name": "gene one",
+                "GeneType": "",
+                "Locus": [],
+            },
+            "DisorderGeneAssociationType": "",
+            "DisorderGeneAssociationStatus": "",
+            "SourceOfValidation": "",
+        }
+
+        sub_resp = MagicMock()
+        sub_resp.status_code = 200
+        sub_resp.json.return_value = {
+            "data": {"results": {"DisorderGeneAssociation": [gene_entry]}}
+        }
+
+        mock_get.side_effect = [name_resp, direct_resp, list_resp, sub_resp, sub_resp]
+
+        result = self.tool._get_genes({"orpha_code": "999"})
+        self.assertEqual(len(result["data"]["genes"]), 1)
+
+    def test_missing_orpha_code(self):
+        result = self.tool._get_genes({})
+        self.assertEqual(result["status"], "error")
+        self.assertIn("orpha_code", result["error"])
+
+
+# ---------------------------------------------------------------------------
+# Feature-86B-001: Orphanet_search_diseases result limit
+# ---------------------------------------------------------------------------
+class TestOrphanetSearchDiseasesLimit(unittest.TestCase):
+    """Orphanet_search_diseases should limit results to avoid flooding."""
+
+    def setUp(self):
+        from tooluniverse.orphanet_tool import OrphanetTool
+
+        self.tool = OrphanetTool({"name": "Orphanet_search_diseases"})
+
+    @patch("tooluniverse.orphanet_tool.requests.get")
+    def test_default_limit_truncates(self, mock_get):
+        """Default limit=20 should truncate large result sets."""
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.raise_for_status = MagicMock()
+        resp.json.return_value = [{"ORPHAcode": i, "Preferred term": f"Disease {i}"} for i in range(100)]
+        mock_get.return_value = resp
+
+        result = self.tool._search_diseases({"query": "test"})
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["data"]["count"], 20)
+        self.assertEqual(result["data"]["total_count"], 100)
+        self.assertTrue(result["metadata"]["truncated"])
+
+    @patch("tooluniverse.orphanet_tool.requests.get")
+    def test_custom_limit(self, mock_get):
+        """Custom limit should be respected."""
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.raise_for_status = MagicMock()
+        resp.json.return_value = [{"ORPHAcode": i} for i in range(50)]
+        mock_get.return_value = resp
+
+        result = self.tool._search_diseases({"query": "test", "limit": 5})
+        self.assertEqual(result["data"]["count"], 5)
+        self.assertEqual(result["data"]["total_count"], 50)
+
+    @patch("tooluniverse.orphanet_tool.requests.get")
+    def test_small_result_not_truncated(self, mock_get):
+        """Small result sets should not be marked as truncated."""
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.raise_for_status = MagicMock()
+        resp.json.return_value = [{"ORPHAcode": 1}, {"ORPHAcode": 2}]
+        mock_get.return_value = resp
+
+        result = self.tool._search_diseases({"query": "test"})
+        self.assertEqual(result["data"]["count"], 2)
+        self.assertFalse(result["metadata"]["truncated"])
+
+
+# ---------------------------------------------------------------------------
+# Feature-86B-008: EuropePMC HTML in abstracts
+# ---------------------------------------------------------------------------
+class TestEuropePMCAbstractHTMLStripping(unittest.TestCase):
+    """EuropePMC abstracts with HTML should be cleaned."""
+
+    def test_html_stripped_from_abstract(self):
+        from tooluniverse.europe_pmc_tool import _extract_text_from_html
+
+        html = "<h4>Objectives</h4>To test <i>in vivo</i> effects."
+        result = _extract_text_from_html(html)
+        self.assertNotIn("<h4>", result)
+        self.assertNotIn("<i>", result)
+        self.assertIn("Objectives", result)
+        self.assertIn("in vivo", result)
+
+    def test_plain_text_unchanged(self):
+        from tooluniverse.europe_pmc_tool import _extract_text_from_html
+
+        text = "This is a plain abstract with no HTML."
+        result = _extract_text_from_html(text)
+        self.assertEqual(result, text)
+
+
+# ---------------------------------------------------------------------------
+# GTEx gene symbol resolution
+# ---------------------------------------------------------------------------
+class TestGTExGeneSymbolResolution(unittest.TestCase):
+    """Test GTEx auto-resolution of gene symbols to versioned GENCODE IDs."""
+
+    def test_resolve_gene_symbol(self):
+        from tooluniverse.gtex_tool import _resolve_gene_id
+
+        with patch("tooluniverse.gtex_tool._http_get") as mock_get:
+            mock_get.return_value = {
+                "data": [{"gencodeId": "ENSG00000166147.13", "geneSymbol": "FBN1"}]
+            }
+            result = _resolve_gene_id("FBN1", "https://gtexportal.org/api/v2", 30)
+            self.assertEqual(result, "ENSG00000166147.13")
+            mock_get.assert_called_once()
+
+    def test_versioned_id_passes_through(self):
+        from tooluniverse.gtex_tool import _resolve_gene_id
+
+        result = _resolve_gene_id(
+            "ENSG00000141510.11", "https://gtexportal.org/api/v2", 30
+        )
+        self.assertEqual(result, "ENSG00000141510.11")
+
+    def test_unversioned_ensembl_resolved(self):
+        from tooluniverse.gtex_tool import _resolve_gene_id
+
+        with patch("tooluniverse.gtex_tool._http_get") as mock_get:
+            mock_get.return_value = {
+                "data": [{"gencodeId": "ENSG00000141510.16"}]
+            }
+            result = _resolve_gene_id(
+                "ENSG00000141510", "https://gtexportal.org/api/v2", 30
+            )
+            self.assertEqual(result, "ENSG00000141510.16")
+
+    def test_resolution_failure_returns_input(self):
+        from tooluniverse.gtex_tool import _resolve_gene_id
+
+        with patch("tooluniverse.gtex_tool._http_get") as mock_get:
+            mock_get.side_effect = Exception("network error")
+            result = _resolve_gene_id("FBN1", "https://gtexportal.org/api/v2", 30)
+            self.assertEqual(result, "FBN1")
+
+    def test_expression_tool_uses_gene_symbol(self):
+        from tooluniverse.gtex_tool import GTExExpressionTool
+
+        tool = GTExExpressionTool(
+            tool_config={
+                "settings": {
+                    "base_url": "https://gtexportal.org/api/v2",
+                    "timeout": 30,
+                }
+            }
+        )
+        with patch("tooluniverse.gtex_tool._resolve_gene_id") as mock_resolve, patch(
+            "tooluniverse.gtex_tool._http_get"
+        ) as mock_get:
+            mock_resolve.return_value = "ENSG00000166147.13"
+            mock_get.return_value = {"data": [{"tissueSiteDetailId": "Brain", "median": 5.2}]}
+            result = tool.run({"gene_symbol": "FBN1"})
+            mock_resolve.assert_called_once_with(
+                "FBN1", "https://gtexportal.org/api/v2", 30
+            )
+            self.assertTrue(result["success"])
+
+    def test_eqtl_tool_uses_gene_symbol(self):
+        from tooluniverse.gtex_tool import GTExEQTLTool
+
+        tool = GTExEQTLTool(
+            tool_config={
+                "settings": {
+                    "base_url": "https://gtexportal.org/api/v2",
+                    "timeout": 30,
+                }
+            }
+        )
+        with patch("tooluniverse.gtex_tool._resolve_gene_id") as mock_resolve, patch(
+            "tooluniverse.gtex_tool._http_get"
+        ) as mock_get:
+            mock_resolve.return_value = "ENSG00000141510.16"
+            mock_get.return_value = {"data": [{"variantId": "chr17_1234_A_G", "pValue": 0.001}]}
+            result = tool.run({"gene_symbol": "TP53"})
+            mock_resolve.assert_called_once_with(
+                "TP53", "https://gtexportal.org/api/v2", 30
+            )
+            self.assertTrue(result["success"])
+
+
+# ---------------------------------------------------------------------------
+# ClinVar condition quoting
+# ---------------------------------------------------------------------------
+class TestClinVarConditionQuoting(unittest.TestCase):
+    """Test ClinVar multi-word condition quoting."""
+
+    def _make_tool(self):
+        from tooluniverse.clinvar_tool import ClinVarSearchVariants
+
+        config = {
+            "name": "ClinVar_search_variants",
+            "type": "ClinVarSearchVariants",
+            "fields": {
+                "endpoint": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
+                "format": "json",
+            },
+        }
+        return ClinVarSearchVariants(config)
+
+    @patch("tooluniverse.clinvar_tool.ClinVarRESTTool._make_request")
+    def test_multi_word_condition_quoted(self, mock_request):
+        mock_request.return_value = {
+            "status": "success",
+            "data": {
+                "esearchresult": {
+                    "count": "100",
+                    "idlist": ["12345"],
+                    "querytranslation": "",
+                }
+            },
+        }
+        tool = self._make_tool()
+        tool.run({"gene": "FBN1", "condition": "Marfan syndrome"})
+        call_args = mock_request.call_args
+        term = call_args[0][1]["term"]
+        self.assertIn('"Marfan syndrome"', term)
+
+    @patch("tooluniverse.clinvar_tool.ClinVarRESTTool._make_request")
+    def test_single_word_condition_not_quoted(self, mock_request):
+        mock_request.return_value = {
+            "status": "success",
+            "data": {
+                "esearchresult": {
+                    "count": "50",
+                    "idlist": ["67890"],
+                    "querytranslation": "",
+                }
+            },
+        }
+        tool = self._make_tool()
+        tool.run({"gene": "BRCA1", "condition": "cancer"})
+        call_args = mock_request.call_args
+        term = call_args[0][1]["term"]
+        self.assertIn("cancer", term)
+        self.assertNotIn('"cancer"', term)
+
+    @patch("tooluniverse.clinvar_tool.ClinVarRESTTool._make_request")
+    def test_already_quoted_condition_not_double_quoted(self, mock_request):
+        mock_request.return_value = {
+            "status": "success",
+            "data": {
+                "esearchresult": {
+                    "count": "10",
+                    "idlist": ["111"],
+                    "querytranslation": "",
+                }
+            },
+        }
+        tool = self._make_tool()
+        tool.run({"condition": '"Marfan syndrome"'})
+        call_args = mock_request.call_args
+        term = call_args[0][1]["term"]
+        # Should not be double-quoted
+        self.assertNotIn('""Marfan syndrome""', term)
+        self.assertIn('"Marfan syndrome"', term)
+
+
 if __name__ == "__main__":
     unittest.main()

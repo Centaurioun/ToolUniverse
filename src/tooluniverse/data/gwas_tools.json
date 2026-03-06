@@ -2,7 +2,7 @@
   {
     "type": "GWASAssociationSearch",
     "name": "gwas_search_associations",
-    "description": "Search for GWAS associations by various criteria including disease trait, rs ID, accession ID, with sorting and pagination support.",
+    "description": "Search the GWAS Catalog for genome-wide association study results by keyword. Accepts free-text disease/trait names (e.g., 'melanoma', 'diabetes', 'breast cancer'), SNP rs IDs, EFO ontology IDs, or study accession IDs. This is the primary tool for discovering GWAS associations when you do NOT already have a specific association ID. Returns SNPs, p-values, odds ratios, mapped genes, and study metadata with pagination support.",
     "parameter": {
       "type": "object",
       "properties": {
@@ -408,7 +408,7 @@
   {
     "type": "GWASSNPSearch",
     "name": "gwas_search_snps",
-    "description": "Search for GWAS single nucleotide polymorphisms (SNPs) by rs ID or mapped gene.",
+    "description": "Search the GWAS Catalog for single nucleotide polymorphisms (SNPs) by rs ID (e.g., 'rs7903146') or mapped gene name (e.g., 'TCF7L2'). Returns SNP details including chromosomal location, mapped genes, and functional class. Use this to look up specific variants or find all GWAS-catalogued SNPs for a gene.",
     "parameter": {
       "type": "object",
       "properties": {
@@ -916,7 +916,7 @@
   {
     "type": "GWASVariantsForTrait",
     "name": "gwas_get_variants_for_trait",
-    "description": "Get all variants associated with a specific trait with pagination support.",
+    "description": "Search the GWAS Catalog for all genetic variants (SNPs) linked to a specific disease or trait. Accepts free-text disease/trait names (e.g., 'diabetes', 'breast cancer'), EFO ontology IDs, or EFO trait labels. Returns variant details including rsIDs, p-values, mapped genes, and genomic locations. This is the best tool for finding all GWAS variants for a disease when you do NOT already have a specific variant ID.",
     "parameter": {
       "type": "object",
       "properties": {
@@ -1656,7 +1656,7 @@
   {
     "type": "GWASSNPsForGene",
     "name": "gwas_get_snps_for_gene",
-    "description": "Get all SNPs mapped to a specific gene.",
+    "description": "Get all GWAS Catalog SNPs mapped to a specific gene by gene name (e.g., 'BRCA1', 'TP53'). Returns variant details including rs IDs, chromosomal positions, and functional annotations. Use this when you want to find all catalogued variants within or near a specific gene.",
     "parameter": {
       "type": "object",
       "properties": {
