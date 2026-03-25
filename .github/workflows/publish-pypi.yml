@@ -22,18 +22,28 @@ jobs:
       - name: Check if version changed
         id: check_version
         run: |
-          # Get current version
-          CURRENT_VERSION=$(grep -oP '(?<=version = ")[^"]+' pyproject.toml)
+          # Get current version using Python (portable, no grep -P dependency)
+          CURRENT_VERSION=$(python3 -c "
+          import re
+          with open('pyproject.toml') as f:
+              m = re.search(r'version\s*=\s*\"([^\"]+)\"', f.read())
+              print(m.group(1) if m else '')
+          ")
           echo "Current version: $CURRENT_VERSION"
-          
+
           # Get previous commit version
           git checkout HEAD~1 -- pyproject.toml 2>/dev/null || true
-          PREVIOUS_VERSION=$(grep -oP '(?<=version = ")[^"]+' pyproject.toml 2>/dev/null || echo "none")
+          PREVIOUS_VERSION=$(python3 -c "
+          import re
+          with open('pyproject.toml') as f:
+              m = re.search(r'version\s*=\s*\"([^\"]+)\"', f.read())
+              print(m.group(1) if m else 'none')
+          " 2>/dev/null || echo "none")
           echo "Previous version: $PREVIOUS_VERSION"
-          
+
           # Restore current version
           git checkout HEAD -- pyproject.toml
-          
+
           # Check if version has changed
           if [ "$CURRENT_VERSION" != "$PREVIOUS_VERSION" ]; then
             echo "Version changed from $PREVIOUS_VERSION to $CURRENT_VERSION"

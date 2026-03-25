@@ -104,51 +104,44 @@ jobs:
           echo "Authenticating with MCP Registry using GitHub OIDC..."
           ./mcp-publisher login github-oidc
 
-      - name: Check if version already published
-        id: check_existing
-        run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
-          echo "Checking if version $VERSION already exists in MCP Registry..."
-          
-          # Query the MCP Registry for existing version
-          REGISTRY_RESPONSE=$(curl -sf "https://registry.modelcontextprotocol.io/v0/servers/io.github.mims-harvard/tooluniverse" 2>/dev/null || echo "{}")
-          PUBLISHED_VERSION=$(echo "$REGISTRY_RESPONSE" | jq -r '.version // empty' 2>/dev/null || echo "")
-          
-          echo "Published version: $PUBLISHED_VERSION"
-          echo "Target version: $VERSION"
-          
-          if [ "$PUBLISHED_VERSION" = "$VERSION" ]; then
-            echo "Version $VERSION is already published to MCP Registry. Skipping."
-            echo "already_published=true" >> $GITHUB_OUTPUT
-          else
-            echo "Version $VERSION not yet published. Proceeding."
-            echo "already_published=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Validate server.json (dry run)
-        if: steps.check_existing.outputs.already_published != 'true'
         run: |
           echo "Running dry-run validation..."
           ./mcp-publisher publish --dry-run
 
       - name: Publish to MCP Registry
-        if: steps.check_existing.outputs.already_published != 'true'
+        id: mcp_publish
         run: |
-          echo "Publishing to MCP Registry..."
-          ./mcp-publisher publish
+          VERSION="${{ steps.get_version.outputs.version }}"
+          echo "Publishing version $VERSION to MCP Registry..."
+          if ./mcp-publisher publish 2>&1; then
+            echo "result=published" >> $GITHUB_OUTPUT
+          else
+            # Check if failure is due to duplicate version (not a real error)
+            REGISTRY_RESPONSE=$(curl -s "https://registry.modelcontextprotocol.io/v0/servers/io.github.mims-harvard/tooluniverse" 2>/dev/null || echo "{}")
+            PUBLISHED_VERSION=$(echo "$REGISTRY_RESPONSE" | jq -r '.version // empty' 2>/dev/null || echo "")
+            if [ "$PUBLISHED_VERSION" = "$VERSION" ]; then
+              echo "Version $VERSION is already published to MCP Registry. Skipping."
+              echo "result=already_published" >> $GITHUB_OUTPUT
+            else
+              echo "::error::MCP Registry publish failed for version $VERSION (registry has: $PUBLISHED_VERSION)"
+              exit 1
+            fi
+          fi
 
       - name: Verify publication
-        if: steps.check_existing.outputs.already_published != 'true'
+        if: steps.mcp_publish.outputs.result == 'published'
         run: |
           echo "Verifying publication..."
-          sleep 10  # Wait for registry to update
+          sleep 10
           echo "Checking MCP Registry for io.github.mims-harvard/tooluniverse..."
           curl -s "https://registry.modelcontextprotocol.io/v0/servers?search=mims-harvard" | jq '.servers[] | {name: .name, version: .version, description: .description}'
 
       - name: Summary
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
-          if [ "${{ steps.check_existing.outputs.already_published }}" = "true" ]; then
+          RESULT="${{ steps.mcp_publish.outputs.result }}"
+          if [ "$RESULT" = "already_published" ]; then
             echo "::notice::Version $VERSION was already published to MCP Registry. No action needed."
           else
             echo "::notice::Version $VERSION successfully published to MCP Registry."
