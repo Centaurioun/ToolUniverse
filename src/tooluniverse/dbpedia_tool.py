@@ -35,7 +35,7 @@ class DBpediaSPARQLTool(BaseTool):
         sparql = arguments.get("sparql")
         max_results = arguments.get("max_results")
         if not sparql:
-            return {"error": "`sparql` parameter is required."}
+            return {"status": "error", "error": "`sparql` parameter is required."}
         if max_results:
             # naive limit appending if not present
             if "limit" not in sparql.lower():
@@ -56,12 +56,14 @@ class DBpediaSPARQLTool(BaseTool):
             data = resp.json()
         except requests.RequestException as e:
             return {
+                "status": "error",
                 "error": "Network/API error calling DBpedia SPARQL",
                 "reason": str(e),
             }
         except ValueError:
             ct = resp.headers.get("content-type", "")
             return {
+                "status": "error",
                 "error": "Failed to decode SPARQL response as JSON",
                 "content_type": ct,
                 "response_snippet": resp.text[:200],

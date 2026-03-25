@@ -42,13 +42,28 @@ Phase 6: ACMG CLASSIFICATION      → Evidence codes, classification, recommenda
 
 ## Phase 1: Variant Identity
 
-Tools: `myvariant_query`, `Ensembl_get_variant_info`, `NCBI_gene_search`
+Tools: `MyVariant_query_variants`, `EnsemblVar_get_variant_consequences`, `NCBIGene_search`, `VariantValidator_gene2transcripts`, `VariantValidator_validate_variant`
 
-Capture: HGVS notation (c. and p.), gene symbol, canonical transcript (MANE Select), consequence type, amino acid change, exon/intron location.
+**VariantValidator_gene2transcripts**: Look up MANE Select and MANE Plus Clinical transcripts for a gene. Use this to identify the correct canonical transcript before variant annotation.
+- Parameters: `gene_symbol` (e.g. "TP53"), `transcript_set` ("mane" | "refseq" | "ensembl" | "all"), `genome_build` ("GRCh38" default)
+- Returns: Array of `{current_symbol, transcripts: [{reference, annotations: {mane_select, mane_plus_clinical}}]}`
+- Aliases: `gene` and `gene_name` also accepted for `gene_symbol`
+
+**VariantValidator_validate_variant**: Validate HGVS variant descriptions and get normalized notation with genomic/transcript/protein consequences.
+- Parameters: `genome_build` ("GRCh37" | "GRCh38"), `variant_description` (HGVS, e.g. "NM_007294.4:c.5266dup"), `select_transcripts` (transcript or "all")
+- Returns: Validated HGVS, protein consequence, genomic coordinates, gene IDs
+
+Capture: HGVS notation (c. and p.), gene symbol, canonical transcript (MANE Select via VariantValidator), consequence type, amino acid change, exon/intron location.
 
 ## Phase 2: Clinical Databases
 
-Tools: `clinvar_search`, `gnomad_search`, `OMIM_search`, `OMIM_get_entry`, `ClinGen_search_gene_validity`, `ClinGen_search_dosage_sensitivity`, `ClinGen_search_actionability`, `COSMIC_search_mutations`, `COSMIC_get_mutations_by_gene`, `DisGeNET_search_gene`, `DisGeNET_get_vda`, `SpliceAI_predict_splice`, `SpliceAI_get_max_delta`
+Tools: `clinvar_search_variants`, `gnomad_search_variants`, `gnomad_get_variant`, `OMIM_search`, `OMIM_get_entry`, `ClinGen_search_gene_validity`, `ClinGen_search_dosage_sensitivity`, `ClinGen_search_actionability`, `COSMIC_search_mutations`, `COSMIC_get_mutations_by_gene`, `DisGeNET_search_gene`, `DisGeNET_get_vda`, `SpliceAI_predict_splice`, `SpliceAI_get_max_delta`, `civic_get_variants_by_gene`, `civic_search_evidence_items`, `civic_search_assertions`
+
+> **gnomAD two-step workflow**: `gnomad_search_variants` only accepts rsIDs or variant IDs (not gene names). Search by rsID first, then use the returned `variant_id` with `gnomad_get_variant` to get population allele frequencies.
+>
+> **CIViC**: Use `civic_get_variants_by_gene` to find clinical evidence for variants in a gene, then `civic_search_evidence_items` for actionability details.
+>
+> **OncoKB note**: Demo mode only supports BRAF, TP53, ROS1. For other genes, set `ONCOKB_API_TOKEN` environment variable.
 
 Use SpliceAI for: intronic variants near splice sites, synonymous variants, exonic variants near splice junctions.
 
@@ -62,7 +77,7 @@ Tools: `ChIPAtlas_enrichment_analysis`, `ChIPAtlas_get_peak_data`, `ENCODE_searc
 
 ## Phase 3: Computational Predictions
 
-Tools: `CADD_get_variant_score` (PHRED 0-99), `AlphaMissense_get_variant_score` (0-1, needs UniProt ID), `EVE_get_variant_score` (0-1), `myvariant_query` (SIFT/PolyPhen), `Ensembl_get_variant_info` (VEP)
+Tools: `CADD_get_variant_score` (PHRED 0-99), `AlphaMissense_get_variant_score` (0-1, needs UniProt ID), `EVE_get_variant_score` (0-1), `MyVariant_query_variants` (SIFT/PolyPhen), `EnsemblVar_get_variant_consequences` (VEP)
 
 Consensus: Run CADD (all variants) + AlphaMissense + EVE (missense). 2+ concordant damaging = strong PP3; 2+ concordant benign = strong BP4.
 
@@ -70,7 +85,7 @@ See `ACMG_CLASSIFICATION.md` for thresholds.
 
 ## Phase 4: Structural Analysis (VUS/Novel Missense)
 
-Tools: `PDB_search_by_uniprot`, `NvidiaNIM_alphafold2`, `alphafold_get_prediction`, `InterPro_get_protein_domains`, `UniProt_get_protein_function`
+Tools: `PDBe_get_uniprot_mappings`, `NvidiaNIM_alphafold2`, `alphafold_get_prediction`, `InterPro_get_protein_domains`, `UniProt_get_function_by_accession`
 
 Workflow: Get structure -> map residue -> assess domain/functional site -> predict destabilization.
 
@@ -82,7 +97,7 @@ Confirms gene expression in disease-relevant tissues. Supports PP4 if highly res
 
 ## Phase 5: Literature Evidence
 
-Tools: `PubMed_search`, `EuropePMC_search`, `BioRxiv_search_preprints`, `MedRxiv_search_preprints`, `openalex_search_works`, `SemanticScholar_search_papers`
+Tools: `PubMed_search_articles`, `EuropePMC_search_articles`, `BioRxiv_list_recent_preprints`, `MedRxiv_get_preprint`, `openalex_search_works`, `SemanticScholar_search_papers`
 
 Always flag preprints as NOT peer-reviewed.
 

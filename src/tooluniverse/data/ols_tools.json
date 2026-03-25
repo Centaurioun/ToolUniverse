@@ -17,7 +17,12 @@
         },
         "rows": {
           "type": "integer",
-          "description": "Number of results to return (default: 10)",
+          "description": "Number of results to return (default: 10). Alias: size.",
+          "default": 10
+        },
+        "size": {
+          "type": "integer",
+          "description": "Alias for rows. Number of results to return (default: 10).",
           "default": 10
         },
         "ontology": {
@@ -33,6 +38,13 @@
           "type": "boolean",
           "description": "Include obsolete terms (default: false)",
           "default": false
+        },
+        "limit": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Alias for rows. Maximum number of results to return (default: 10, max: 100)."
         }
       },
       "required": [
@@ -184,11 +196,13 @@
         "ontology_id": {
           "type": "string",
           "description": "The ID of the ontology to retrieve"
+        },
+        "ontology": {
+          "type": "string",
+          "description": "Alias for ontology_id. The ontology abbreviation (e.g. mondo, hp, go, ordo)."
         }
       },
-      "required": [
-        "ontology_id"
-      ]
+      "required": []
     },
     "examples": [
       {
@@ -355,12 +369,18 @@
         },
         "id": {
           "type": "string",
-          "description": "The ID or IRI of the term to retrieve"
+          "description": "Ontology term ID or IRI (e.g. HP:0001903, http://purl.obolibrary.org/obo/HP_0001903)"
+        },
+        "term_id": {
+          "type": "string",
+          "description": "Alias for id \u2014 ontology term ID (e.g. HP:0001903)"
+        },
+        "term_iri": {
+          "type": "string",
+          "description": "Alias for id. Full IRI or short-form ID (e.g., GO:0008150, EFO:0003971). Same as id."
         }
       },
-      "required": [
-        "id"
-      ]
+      "required": []
     },
     "examples": [
       {
@@ -382,7 +402,7 @@
     "version": "1.0.0",
     "test_examples": [
       {
-        "id": "1"
+        "id": "HP:0001903"
       }
     ],
     "return_schema": {
@@ -418,7 +438,7 @@
   {
     "type": "OLSTool",
     "name": "ols_get_term_children",
-    "description": "Get child terms of a specific term in an ontology",
+    "description": "Get child terms of a specific term in an ontology. Use `term_id` with CURIE format (e.g., 'HP:0001928') \u2014 the ontology is auto-inferred from the prefix. Or supply `term_iri` + `ontology` explicitly.",
     "parameter": {
       "type": "object",
       "properties": {
@@ -429,11 +449,15 @@
         },
         "term_iri": {
           "type": "string",
-          "description": "The IRI of the term to retrieve children for"
+          "description": "The full IRI of the term (e.g., http://www.ebi.ac.uk/efo/EFO_0000408)"
+        },
+        "term_id": {
+          "type": "string",
+          "description": "Short-form CURIE (e.g., 'HP:0001928', 'GO:0008150'). Ontology is auto-inferred from prefix."
         },
         "ontology": {
           "type": "string",
-          "description": "The ontology ID"
+          "description": "Ontology ID (e.g., 'hp', 'go', 'efo'). Auto-inferred from term_id prefix when not supplied."
         },
         "include_obsolete": {
           "type": "boolean",
@@ -446,10 +470,7 @@
           "default": 20
         }
       },
-      "required": [
-        "term_iri",
-        "ontology"
-      ]
+      "required": []
     },
     "examples": [
       {
@@ -517,7 +538,7 @@
   {
     "type": "OLSTool",
     "name": "ols_get_term_ancestors",
-    "description": "Get ancestor terms of a specific term in an ontology",
+    "description": "Get ancestor terms of a specific term in an ontology. Use `term_id` with CURIE format (e.g., 'HP:0001928') \u2014 the ontology is auto-inferred from the prefix. Or supply `term_iri` + `ontology` explicitly.",
     "parameter": {
       "type": "object",
       "properties": {
@@ -528,11 +549,15 @@
         },
         "term_iri": {
           "type": "string",
-          "description": "The IRI of the term to retrieve ancestors for"
+          "description": "The full IRI of the term (e.g., http://www.ebi.ac.uk/efo/EFO_0000408)"
+        },
+        "term_id": {
+          "type": "string",
+          "description": "Short-form CURIE (e.g., 'HP:0001928', 'GO:0008150'). Ontology is auto-inferred from prefix."
         },
         "ontology": {
           "type": "string",
-          "description": "The ontology ID"
+          "description": "Ontology ID (e.g., 'hp', 'go', 'efo'). Auto-inferred from term_id prefix when not supplied."
         },
         "include_obsolete": {
           "type": "boolean",
@@ -545,10 +570,7 @@
           "default": 20
         }
       },
-      "required": [
-        "term_iri",
-        "ontology"
-      ]
+      "required": []
     },
     "examples": [
       {
@@ -636,10 +658,13 @@
           "type": "integer",
           "description": "Number of similar terms to return (default: 10)",
           "default": 10
+        },
+        "term_id": {
+          "type": "string",
+          "description": "Alias for term_iri. Short-form ontology ID (e.g., GO:0008150) or full IRI."
         }
       },
       "required": [
-        "term_iri",
         "ontology"
       ]
     },

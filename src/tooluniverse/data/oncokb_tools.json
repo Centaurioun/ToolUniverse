@@ -15,6 +15,10 @@
           "type": "string",
           "description": "Gene symbol (e.g., BRAF, EGFR, TP53, KRAS)"
         },
+        "gene_symbol": {
+          "type": "string",
+          "description": "Alias for gene. Gene symbol (e.g., BRAF, EGFR, TP53, KRAS)."
+        },
         "variant": {
           "type": "string",
           "description": "Variant notation - protein change (e.g., V600E, T790M, G12D)"
@@ -22,12 +26,13 @@
         "tumor_type": {
           "type": "string",
           "description": "Optional OncoTree tumor type code (e.g., MEL for melanoma, LUAD for lung adenocarcinoma)"
+        },
+        "alteration": {
+          "type": "string",
+          "description": "Alias for variant. Protein change notation (e.g., \"V600E\", \"T790M\", \"G12D\")."
         }
       },
-      "required": [
-        "gene",
-        "variant"
-      ]
+      "required": []
     },
     "return_schema": {
       "type": "object",
@@ -75,6 +80,9 @@
         "variant": "V600E",
         "tumor_type": "MEL"
       }
+    ],
+    "optional_api_keys": [
+      "ONCOKB_API_TOKEN"
     ]
   },
   {
@@ -91,12 +99,14 @@
         },
         "gene": {
           "type": "string",
-          "description": "Gene symbol (e.g., BRAF, TP53, EGFR, KRAS)"
+          "description": "Gene symbol (e.g., BRAF, TP53, ROS1). Without ONCOKB_API_TOKEN only BRAF, TP53, and ROS1 are available (demo mode)."
+        },
+        "gene_symbol": {
+          "type": "string",
+          "description": "Gene symbol alias \u2014 alternative to gene parameter"
         }
       },
-      "required": [
-        "gene"
-      ]
+      "required": []
     },
     "return_schema": {
       "type": "object",
@@ -134,6 +144,9 @@
       {
         "gene": "TP53"
       }
+    ],
+    "optional_api_keys": [
+      "ONCOKB_API_TOKEN"
     ]
   },
   {
@@ -178,6 +191,9 @@
     },
     "test_examples": [
       {}
+    ],
+    "optional_api_keys": [
+      "ONCOKB_API_TOKEN"
     ]
   },
   {
@@ -221,6 +237,9 @@
     },
     "test_examples": [
       {}
+    ],
+    "optional_api_keys": [
+      "ONCOKB_API_TOKEN"
     ]
   },
   {
@@ -243,18 +262,25 @@
           "type": "string",
           "enum": [
             "AMPLIFICATION",
-            "DELETION"
+            "DELETION",
+            "Amplification",
+            "Deletion",
+            "amplification",
+            "deletion"
           ],
-          "description": "Type of copy number alteration"
+          "description": "Type of copy number alteration (case-insensitive: AMPLIFICATION or DELETION)"
         },
         "tumor_type": {
           "type": "string",
           "description": "Optional OncoTree tumor type code"
+        },
+        "copy_number_alteration": {
+          "type": "string",
+          "description": "Alias for copy_number_type. Amplification or Deletion."
         }
       },
       "required": [
-        "gene",
-        "copy_number_type"
+        "gene"
       ]
     },
     "return_schema": {
@@ -284,6 +310,9 @@
         "gene": "ERBB2",
         "copy_number_type": "AMPLIFICATION"
       }
+    ],
+    "optional_api_keys": [
+      "ONCOKB_API_TOKEN"
     ]
   }
 ]

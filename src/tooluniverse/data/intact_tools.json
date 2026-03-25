@@ -29,7 +29,10 @@
       "return_format": "JSON"
     },
     "return_schema": {
-      "type": ["array", "object"],
+      "type": [
+        "array",
+        "object"
+      ],
       "description": "Interactor information including names, organism, cross-references (returns array for multiple results or object for single result)"
     },
     "test_examples": [
@@ -184,7 +187,23 @@
       "properties": {
         "identifier": {
           "type": "string",
-          "description": "IntAct identifier, UniProt ID, or gene name"
+          "description": "IntAct identifier, UniProt ID, or gene name. Aliases: uniprot_id, protein_id, gene_symbol, gene_name."
+        },
+        "uniprot_id": {
+          "type": "string",
+          "description": "Alias for identifier: UniProt accession (e.g., 'P04637')."
+        },
+        "protein_id": {
+          "type": "string",
+          "description": "Alias for identifier: protein identifier."
+        },
+        "gene_symbol": {
+          "type": "string",
+          "description": "Alias for identifier: gene symbol (e.g., 'BRCA1')."
+        },
+        "gene_name": {
+          "type": "string",
+          "description": "Alias for identifier: gene name."
         },
         "depth": {
           "type": "integer",
@@ -193,6 +212,16 @@
           "minimum": 1,
           "maximum": 3
         },
+        "limit": {
+          "type": "integer",
+          "description": "Maximum number of interactions to return (default: 50, max: 200). Alias: size.",
+          "default": 50
+        },
+        "size": {
+          "type": "integer",
+          "description": "Alias for limit. Maximum number of interactions to return (default: 50).",
+          "default": 50
+        },
         "format": {
           "type": "string",
           "enum": [
@@ -200,19 +229,65 @@
             "xml"
           ],
           "default": "json"
+        },
+        "protein_name": {
+          "type": "string",
+          "description": "Alias for gene_symbol/identifier. Common protein name (e.g., MDM2, TP53)."
+        },
+        "protein": {
+          "type": "string",
+          "description": "Alias for identifier. Gene symbol or protein name (e.g., 'TP53', 'BRCA1')."
         }
       },
-      "required": [
-        "identifier"
-      ]
+      "required": []
     },
     "fields": {
       "endpoint": "https://www.ebi.ac.uk/intact/ws/interaction/network/{identifier}",
       "return_format": "JSON"
     },
     "return_schema": {
-      "type": "array",
-      "description": "Interaction network data with nodes and edges"
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "success"
+              ]
+            },
+            "data": {
+              "type": "array"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "hitCount": {
+              "type": "integer"
+            },
+            "interaction_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "error"
+              ]
+            },
+            "error": {
+              "type": "string"
+            }
+          }
+        }
+      ]
     },
     "test_examples": [
       {

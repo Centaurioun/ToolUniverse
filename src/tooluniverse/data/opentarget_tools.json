@@ -176,7 +176,7 @@
   },
   {
     "name": "OpenTargets_target_disease_evidence",
-    "description": "Explore IntOGen somatic driver evidence for a target-disease association (cancer mutation data only). For broader evidence across all data sources (genetics, literature, pathways, etc.), use OpenTargets_get_evidence_by_datasource instead. Input is disease efoId and target ensemblID.",
+    "description": "Explore IntOGen somatic driver evidence for a target-disease association. IMPORTANT: IntOGen only covers somatic tumor driver mutations — this tool returns empty data ({}) for non-cancer diseases (e.g., type 2 diabetes, hypertension). Empty results are expected and normal when querying non-oncology phenotypes. For non-cancer diseases or to query other data sources, use OpenTargets_get_evidence_by_datasource instead. Accepts gene_symbol (e.g. 'TP53') and disease_name (e.g. 'Crohn disease') as alternatives to ensemblId/efoId — IDs are auto-resolved via OpenTargets search.",
     "label": [
       "Target",
       "Disease",
@@ -190,17 +190,22 @@
       "properties": {
         "efoId": {
           "type": "string",
-          "description": "The efoId of a disease or phenotype."
+          "description": "EFO/MONDO disease ID (e.g., EFO_0000384). Alternative to disease_name."
         },
         "ensemblId": {
           "type": "string",
-          "description": "The ensemblId of a target."
+          "description": "Ensembl gene ID (e.g., ENSG00000141510). Alternative to gene_symbol."
+        },
+        "gene_symbol": {
+          "type": "string",
+          "description": "HGNC gene symbol (e.g., 'TP53', 'BRCA1'). Auto-resolved to ensemblId."
+        },
+        "disease_name": {
+          "type": "string",
+          "description": "Disease or phenotype name (e.g., 'Crohn disease', 'breast carcinoma'). Auto-resolved to efoId."
         }
       },
-      "required": [
-        "efoId",
-        "ensemblId"
-      ]
+      "required": []
     },
     "query_schema": "\nquery targetDiseaseEvidence($efoId: String!, $ensemblId: String!) {\n  disease(efoId: $efoId) {\n    id\n    name\n    evidences(datasourceIds: [\"intogen\"], ensemblIds: [$ensemblId]) {\n      count\n      rows {\n        disease {\n          id\n          name\n        }\n        diseaseFromSource\n        target {\n          id\n          approvedSymbol\n        }\n        mutatedSamples {\n          functionalConsequence {\n            id\n            label\n          }\n          numberSamplesTested\n          numberMutatedSamples\n        }\n        resourceScore\n        significantDriverMethods\n        cohortId\n        cohortShortName\n        cohortDescription\n      }\n    }\n  }\n}\n",
     "type": "OpenTarget",
@@ -256,15 +261,25 @@
       "properties": {
         "efoId": {
           "type": "string",
-          "description": "Disease EFO ID (e.g., 'EFO_0000384' for Crohn's disease)"
+          "description": "Disease EFO ID (e.g., 'EFO_0000384' for Crohn's disease). Alternative to disease_name."
         },
         "ensemblId": {
           "type": "string",
-          "description": "Target Ensembl gene ID (e.g., 'ENSG00000141510' for TP53)"
+          "description": "Target Ensembl gene ID (e.g., 'ENSG00000141510' for TP53). Alternative to gene_symbol."
+        },
+        "gene_symbol": {
+          "type": "string",
+          "description": "HGNC gene symbol (e.g., 'TP53', 'BRCA1'). Auto-resolved to ensemblId."
+        },
+        "disease_name": {
+          "type": "string",
+          "description": "Disease or phenotype name (e.g., 'Crohn disease'). Auto-resolved to efoId."
         },
         "datasourceIds": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "description": "List of datasource IDs to filter evidence. Examples: ['chembl', 'europepmc'], ['eva', 'clinvar'], ['intogen', 'cancer_gene_census']. Omit or pass empty array for all sources."
         },
         "size": {
@@ -273,10 +288,7 @@
           "default": 50
         }
       },
-      "required": [
-        "efoId",
-        "ensemblId"
-      ]
+      "required": []
     },
     "query_schema": "\nquery getEvidenceByDatasource($efoId: String!, $ensemblId: String!, $datasourceIds: [String!], $size: Int) {\n  disease(efoId: $efoId) {\n    id\n    name\n    evidences(datasourceIds: $datasourceIds, ensemblIds: [$ensemblId], size: $size) {\n      count\n      rows {\n        datasourceId\n        datatypeId\n        disease {\n          id\n          name\n        }\n        diseaseFromSource\n        target {\n          id\n          approvedSymbol\n        }\n        score\n        resourceScore\n        literature\n        urls {\n          url\n          niceName\n        }\n      }\n    }\n  }\n}\n",
     "type": "OpenTarget",
@@ -284,13 +296,17 @@
       {
         "efoId": "EFO_0000384",
         "ensemblId": "ENSG00000141510",
-        "datasourceIds": ["europepmc"],
+        "datasourceIds": [
+          "europepmc"
+        ],
         "size": 10
       },
       {
         "efoId": "EFO_0000389",
         "ensemblId": "ENSG00000157764",
-        "datasourceIds": ["chembl"],
+        "datasourceIds": [
+          "chembl"
+        ],
         "size": 5
       }
     ],
@@ -303,21 +319,35 @@
             "disease": {
               "type": "object",
               "properties": {
-                "id": {"type": "string"},
-                "name": {"type": "string"},
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
                 "evidences": {
                   "type": "object",
                   "properties": {
-                    "count": {"type": "integer"},
+                    "count": {
+                      "type": "integer"
+                    },
                     "rows": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "datasourceId": {"type": "string"},
-                          "datatypeId": {"type": "string"},
-                          "score": {"type": "number"},
-                          "literature": {"type": "array"}
+                          "datasourceId": {
+                            "type": "string"
+                          },
+                          "datatypeId": {
+                            "type": "string"
+                          },
+                          "score": {
+                            "type": "number"
+                          },
+                          "literature": {
+                            "type": "array"
+                          }
                         }
                       }
                     }
@@ -483,18 +513,13 @@
         "efoId": {
           "type": "string",
           "description": "The EFO ID of the disease."
-        },
-        "size": {
-          "type": "integer",
-          "description": "Number of entries to fetch, recomanding a large number to avoid missing drugs."
         }
       },
       "required": [
-        "efoId",
-        "size"
+        "efoId"
       ]
     },
-    "query_schema": "\n  query diseaseKnownDrugs($efoId: String!, $size: Int!, $freeTextQuery: String) {\n    disease(efoId: $efoId) {\n      id\n      name\n      knownDrugs(size: $size, freeTextQuery: $freeTextQuery) {\n        count\n        rows {\n          drug {\n            id\n            name\n            tradeNames\n            maximumClinicalTrialPhase\n            isApproved\n            hasBeenWithdrawn\n          }\n          phase\n          status\n          mechanismOfAction\n          target {\n            id\n            approvedSymbol\n          }\n        }\n      }\n    }\n  }\n  ",
+    "query_schema": "\n  query diseaseKnownDrugs($efoId: String!) {\n    disease(efoId: $efoId) {\n      id\n      name\n      drugAndClinicalCandidates {\n        count\n        rows {\n          drug {\n            id\n            name\n            maximumClinicalStage\n          }\n          maxClinicalStage\n        }\n      }\n    }\n  }\n  ",
     "label": [
       "OpenTarget",
       "Disease",
@@ -505,8 +530,7 @@
     "type": "OpenTarget",
     "test_examples": [
       {
-        "efoId": "EFO_0000384",
-        "size": 1
+        "efoId": "MONDO_0004975"
       }
     ],
     "return_schema": {
@@ -524,7 +548,7 @@
                 "name": {
                   "type": "string"
                 },
-                "knownDrugs": {
+                "drugAndClinicalCandidates": {
                   "type": "object",
                   "properties": {
                     "count": {
@@ -561,7 +585,7 @@
                               }
                             }
                           },
-                          "phase": {
+                          "maxClinicalStage": {
                             "type": "integer"
                           },
                           "mechanismOfAction": {
@@ -963,7 +987,7 @@
         "chemblId"
       ]
     },
-    "query_schema": "\n  query drugWithdrawnWarningData($chemblId: String!) {\n    drug(chemblId: $chemblId) {\n      name\n      id\n      hasBeenWithdrawn\n      blackBoxWarning\n    }\n  }\n  ",
+    "query_schema": "\n  query drugWithdrawnWarningData($chemblId: String!) {\n    drug(chemblId: $chemblId) {\n      name\n      id\n      blackBoxWarning\n    }\n  }\n  ",
     "label": [
       "Drug",
       "SafetyWarnings",
@@ -2179,7 +2203,10 @@
     "test_examples": [
       {
         "ensemblId": "ENSG00000141510",
-        "page": {"index": 0, "size": 10}
+        "page": {
+          "index": 0,
+          "size": 10
+        }
       }
     ],
     "return_schema": {
@@ -2726,7 +2753,10 @@
     "test_examples": [
       {
         "chemblId": "CHEMBL25",
-        "page": {"index": 0, "size": 10}
+        "page": {
+          "index": 0,
+          "size": 10
+        }
       }
     ],
     "return_schema": {
@@ -2861,7 +2891,7 @@
         "chemblId"
       ]
     },
-    "query_schema": "\n      query retrieveMultipleDrugsInfo($chemblId: String!) {\n        drug(chemblId: $chemblId) {\n          id\n          name\n        knownDrugs {\n            uniqueDrugs\n            uniqueDiseases\n            uniqueTargets\n            count\n            cursor\n            rows {\n              approvedSymbol\n              approvedName\n              label\n              prefName\n              drugType\n              targetId\n              diseaseId\n              drugId\n              phase\n              mechanismOfAction\n              status\n              targetClass\n              references {\n                source\n                ids\n                urls\n              }\n              ctIds\n              urls {\n                url\n                name\n              }\n              disease {\n                id\n                name\n              }\n              target {\n                id\n                approvedSymbol\n              }\n              drug {\n                id\n                name\n              }\n            }\n          }\n        }\n      }\n    ",
+    "query_schema": "\n  query drugKnownDrugs($chemblId: String!) {\n    drug(chemblId: $chemblId) {\n      id\n      name\n      maximumClinicalStage\n      drugType\n      drugWarnings {\n        toxicityClass\n        description\n      }\n    }\n  }\n  ",
     "label": [
       "OpenTarget",
       "Drug",
@@ -2889,7 +2919,7 @@
                 "name": {
                   "type": "string"
                 },
-                "knownDrugs": {
+                "drugAndClinicalCandidates": {
                   "type": "object",
                   "properties": {
                     "uniqueDrugs": {
@@ -2936,7 +2966,7 @@
                           "drugId": {
                             "type": "string"
                           },
-                          "phase": {
+                          "maxClinicalStage": {
                             "type": "integer"
                           },
                           "mechanismOfAction": {
@@ -3408,7 +3438,7 @@
         "chemblId"
       ]
     },
-    "query_schema": "\n      query drugApprovalStatus($chemblId: String!) {\n        drug(chemblId: $chemblId) {\n          id\n          name\n          isApproved\n        }\n      }\n    ",
+    "query_schema": "\n  query drugApprovalStatus($chemblId: String!) {\n    drug(chemblId: $chemblId) {\n      id\n      name\n      maximumClinicalStage\n      drugType\n      drugWarnings {\n        toxicityClass\n        description\n      }\n    }\n  }\n  ",
     "label": [
       "Drug",
       "Drug Information",
@@ -3567,33 +3597,18 @@
       "properties": {
         "chemblId": {
           "type": "string",
-          "description": "The ChEMBL ID of the drug."
-        },
-        "page": {
-          "type": "object",
-          "description": "Pagination options.",
-          "properties": {
-            "index": {
-              "type": "integer",
-              "description": "Pagination index."
-            },
-            "size": {
-              "type": "integer",
-              "description": "Number of records to fetch per page."
-            }
-          }
+          "description": "The ChEMBL ID of the drug (e.g., 'CHEMBL25' for aspirin, 'CHEMBL1201583' for pembrolizumab)."
         }
       },
       "required": [
         "chemblId"
       ]
     },
-    "query_schema": "\n      query drugPharmacogenomicsData($chemblId: String!, $page: Pagination) {\n        drug(chemblId: $chemblId) {\n          id\n          name\n          pharmacogenomics(page: $page) {\n            datasourceId\n            datatypeId\n            genotype\n            evidenceLevel\n            genotypeAnnotationText\n            genotypeId\n            haplotypeFromSourceId\n            haplotypeId\n            literature\n            pgxCategory\n            phenotypeFromSourceId\n            phenotypeText\n            studyId\n            targetFromSourceId\n            variantFunctionalConsequenceId\n            variantRsId\n            isDirectTarget\n            variantFunctionalConsequence {\n              id\n              label\n            }\n            drugs {\n              drugId\n              drug {\n        name\n      }\n            }\n            target {\n              id\n              approvedSymbol\n            }\n          }\n        }\n      }\n    ",
+    "query_schema": "\n      query drugPharmacogenomicsData($chemblId: String!) {\n        drug(chemblId: $chemblId) {\n          id\n          name\n          pharmacogenomics {\n            datasourceId\n            datatypeId\n            genotype\n            evidenceLevel\n            genotypeAnnotationText\n            genotypeId\n            haplotypeFromSourceId\n            haplotypeId\n            literature\n            pgxCategory\n            phenotypeFromSourceId\n            phenotypeText\n            studyId\n            targetFromSourceId\n            variantFunctionalConsequenceId\n            variantRsId\n            isDirectTarget\n            variantFunctionalConsequence {\n              id\n              label\n            }\n            drugs {\n              drugId\n              drug {\n        name\n      }\n            }\n            target {\n              id\n              approvedSymbol\n            }\n          }\n        }\n      }\n    ",
     "type": "OpenTarget",
     "test_examples": [
       {
-        "chemblId": "CHEMBL25",
-        "page": {"index": 0, "size": 10}
+        "chemblId": "CHEMBL25"
       }
     ],
     "return_schema": {
@@ -3608,21 +3623,41 @@
                 "drug": {
                   "type": "object",
                   "properties": {
-                    "id": {"type": "string"},
-                    "name": {"type": "string"},
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
                     "pharmacogenomics": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "datasourceId": {"type": "string"},
-                          "evidenceLevel": {"type": "string"},
-                          "genotype": {"type": "string"},
-                          "genotypeAnnotationText": {"type": "string"},
-                          "pgxCategory": {"type": "string"},
-                          "phenotypeText": {"type": "string"},
-                          "variantRsId": {"type": "string"},
-                          "isDirectTarget": {"type": "boolean"}
+                          "datasourceId": {
+                            "type": "string"
+                          },
+                          "evidenceLevel": {
+                            "type": "string"
+                          },
+                          "genotype": {
+                            "type": "string"
+                          },
+                          "genotypeAnnotationText": {
+                            "type": "string"
+                          },
+                          "pgxCategory": {
+                            "type": "string"
+                          },
+                          "phenotypeText": {
+                            "type": "string"
+                          },
+                          "variantRsId": {
+                            "type": "string"
+                          },
+                          "isDirectTarget": {
+                            "type": "boolean"
+                          }
                         }
                       }
                     }
@@ -3631,7 +3666,9 @@
               }
             }
           },
-          "required": ["data"]
+          "required": [
+            "data"
+          ]
         },
         {
           "type": "null",
@@ -3649,22 +3686,13 @@
         "ensemblId": {
           "type": "string",
           "description": "The Ensembl ID of the target."
-        },
-        "size": {
-          "type": "integer",
-          "description": "Number of entries to fetch."
-        },
-        "cursor": {
-          "type": "string",
-          "description": "Cursor for pagination."
         }
       },
       "required": [
-        "ensemblId",
-        "size"
+        "ensemblId"
       ]
     },
-    "query_schema": "\n      query targetKnownDrugs($ensemblId: String!, $size: Int!, $cursor: String) {\n        target(ensemblId: $ensemblId) {\n          id\n          approvedSymbol\n          knownDrugs(size: $size, cursor: $cursor) {\n            count\n            rows {\n              drug {\n                id\n                name\n                tradeNames\n                maximumClinicalTrialPhase\n                isApproved\n                hasBeenWithdrawn\n              }\n              phase\n              status\n              mechanismOfAction\n              disease {\n                id\n                name\n              }\n            }\n          }\n        }\n      }\n    ",
+    "query_schema": "\n  query targetKnownDrugs($ensemblId: String!) {\n    target(ensemblId: $ensemblId) {\n      id\n      approvedSymbol\n      drugAndClinicalCandidates {\n        count\n        rows {\n          drug {\n            id\n            name\n            maximumClinicalStage\n          }\n          maxClinicalStage\n          diseases {\n            disease {\n              id\n              name\n            }\n          }\n        }\n      }\n    }\n  }\n  ",
     "label": [
       "Target",
       "Drug",
@@ -3676,9 +3704,7 @@
     "type": "OpenTarget",
     "test_examples": [
       {
-        "ensemblId": "ENSG00000141510",
-        "size": 1,
-        "cursor": "E11.9"
+        "ensemblId": "ENSG00000121879"
       }
     ],
     "return_schema": {
@@ -3696,7 +3722,7 @@
                 "approvedSymbol": {
                   "type": "string"
                 },
-                "knownDrugs": {
+                "drugAndClinicalCandidates": {
                   "type": "object",
                   "properties": {
                     "count": {
@@ -3727,10 +3753,7 @@
                               }
                             }
                           },
-                          "phase": {
-                            "type": "integer"
-                          },
-                          "status": {
+                          "maxClinicalStage": {
                             "type": "string"
                           },
                           "mechanismOfAction": {
@@ -3960,7 +3983,10 @@
       {
         "queryString": "gene:TP53",
         "entityNames": [],
-        "page": {"index": 0, "size": 10}
+        "page": {
+          "index": 0,
+          "size": 10
+        }
       }
     ],
     "return_schema": {
@@ -4127,7 +4153,9 @@
     "type": "OpenTarget",
     "test_examples": [
       {
-        "goIds": ["GO:0005515"]
+        "goIds": [
+          "GO:0005515"
+        ]
       }
     ],
     "return_schema": {

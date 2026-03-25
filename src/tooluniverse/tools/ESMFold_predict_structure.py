@@ -1,30 +1,27 @@
 """
-pc_get_interactions
+ESMFold_predict_structure
 
-Retrieves the interaction network (neighborhood) for a specified list of genes. Returns interacti...
+Predict protein 3D structure from amino acid sequence using ESMFold (Meta's ESM-2 language model)...
 """
 
 from typing import Any, Optional, Callable
 from ._shared_client import get_shared_client
 
 
-def pc_get_interactions(
-    action: str,
-    gene_list: list[str],
+def ESMFold_predict_structure(
+    sequence: str,
     *,
     stream_callback: Optional[Callable[[str], None]] = None,
     use_cache: bool = False,
     validate: bool = True,
 ) -> dict[str, Any]:
     """
-    Retrieves the interaction network (neighborhood) for a specified list of genes. Returns interacti...
+    Predict protein 3D structure from amino acid sequence using ESMFold (Meta's ESM-2 language model)...
 
     Parameters
     ----------
-    action : str
-        The specific action to perform. Must be set to 'get_interaction_graph'.
-    gene_list : list[str]
-        A list of gene symbols (e.g., ['TP53', 'MDM2']) to query interactions for.
+    sequence : str
+        Protein amino acid sequence in single-letter code. Example: 'MVLSPADKTNVKAAWG...
     stream_callback : Callable, optional
         Callback for streaming output
     use_cache : bool, default False
@@ -39,14 +36,10 @@ def pc_get_interactions(
     # Handle mutable defaults to avoid B006 linting error
 
     # Strip None values so optional parameters don't trigger schema validation errors
-    _args = {
-        k: v
-        for k, v in {"action": action, "gene_list": gene_list}.items()
-        if v is not None
-    }
+    _args = {k: v for k, v in {"sequence": sequence}.items() if v is not None}
     return get_shared_client().run_one_function(
         {
-            "name": "pc_get_interactions",
+            "name": "ESMFold_predict_structure",
             "arguments": _args,
         },
         stream_callback=stream_callback,
@@ -55,4 +48,4 @@ def pc_get_interactions(
     )
 
 
-__all__ = ["pc_get_interactions"]
+__all__ = ["ESMFold_predict_structure"]

@@ -8,7 +8,11 @@
       "properties": {
         "disease_trait": {
           "type": "string",
-          "description": "Disease or trait name for text-based search (e.g., 'diabetes', 'coronary artery disease', 'breast cancer'). WARNING: free-text search is broad and may return many unrelated associations. Prefer efo_id for precise filtering."
+          "description": "Disease or trait name for text-based search (e.g., 'diabetes', 'coronary artery disease', 'breast cancer'). NOTE: GWAS associations are indexed by trait/disease, not by gene or drug name — passing a gene symbol or drug name here will fail. Use efo_id for precise filtering."
+        },
+        "query": {
+          "type": "string",
+          "description": "Alias for disease_trait. Disease or trait name (e.g., 'type 2 diabetes'). NOTE: gene symbols and drug names are not valid GWAS trait queries."
         },
         "efo_uri": {
           "type": "string",
@@ -29,6 +33,14 @@
         "accession_id": {
           "type": "string",
           "description": "Study accession identifier"
+        },
+        "p_value": {
+          "type": "number",
+          "description": "Maximum p-value threshold for filtering (e.g., 5e-8 for genome-wide significance). Applied client-side after retrieval."
+        },
+        "p_value_threshold": {
+          "type": "number",
+          "description": "Alias for p_value: maximum p-value threshold."
         },
         "sort": {
           "type": "string",
@@ -102,7 +114,10 @@
                 "description": "Study accession ID"
               },
               "pubmed_id": {
-                "type": ["string", "integer"],
+                "type": [
+                  "string",
+                  "integer"
+                ],
                 "description": "PubMed reference (can be string or integer)"
               },
               "first_author": {
@@ -349,7 +364,10 @@
                 "description": "URL to full summary statistics"
               },
               "pubmed_id": {
-                "type": ["string", "integer"],
+                "type": [
+                  "string",
+                  "integer"
+                ],
                 "description": "PubMed reference (can be string or integer)"
               },
               "terms_of_license": {
@@ -612,7 +630,10 @@
           "description": "Study accession ID"
         },
         "pubmed_id": {
-          "type": ["string", "integer"],
+          "type": [
+            "string",
+            "integer"
+          ],
           "description": "PubMed reference (can be string or integer)"
         },
         "first_author": {
@@ -791,7 +812,10 @@
           "description": "URL to full summary statistics"
         },
         "pubmed_id": {
-          "type": ["string", "integer"],
+          "type": [
+            "string",
+            "integer"
+          ],
           "description": "PubMed reference (can be string or integer)"
         },
         "terms_of_license": {
@@ -924,6 +948,10 @@
           "type": "string",
           "description": "Disease or trait name for text-based search (e.g., 'diabetes', 'breast cancer')"
         },
+        "trait": {
+          "type": "string",
+          "description": "Alias for disease_trait. Disease or trait name (e.g., 'type 2 diabetes', 'breast cancer')"
+        },
         "efo_uri": {
           "type": "string",
           "description": "Full EFO ontology URI (e.g., 'http://www.ebi.ac.uk/efo/EFO_0001645')"
@@ -940,16 +968,41 @@
           "type": "integer",
           "description": "Number of results to return per page"
         },
+        "limit": {
+          "type": "integer",
+          "description": "Alias for size. Number of results to return per page"
+        },
         "page": {
           "type": "integer",
           "description": "Page number for pagination"
         }
       },
       "oneOf": [
-        {"required": ["disease_trait"]},
-        {"required": ["efo_uri"]},
-        {"required": ["efo_id"]},
-        {"required": ["efo_trait"]}
+        {
+          "required": [
+            "disease_trait"
+          ]
+        },
+        {
+          "required": [
+            "trait"
+          ]
+        },
+        {
+          "required": [
+            "efo_uri"
+          ]
+        },
+        {
+          "required": [
+            "efo_id"
+          ]
+        },
+        {
+          "required": [
+            "efo_trait"
+          ]
+        }
       ]
     },
     "label": [
@@ -983,7 +1036,10 @@
               "locations": {
                 "type": "array",
                 "items": {
-                  "type": ["object", "string"]
+                  "type": [
+                    "object",
+                    "string"
+                  ]
                 },
                 "description": "Array of location objects or location strings"
               },
@@ -1101,10 +1157,26 @@
         }
       },
       "oneOf": [
-        {"required": ["disease_trait"]},
-        {"required": ["efo_uri"]},
-        {"required": ["efo_id"]},
-        {"required": ["efo_trait"]}
+        {
+          "required": [
+            "disease_trait"
+          ]
+        },
+        {
+          "required": [
+            "efo_uri"
+          ]
+        },
+        {
+          "required": [
+            "efo_id"
+          ]
+        },
+        {
+          "required": [
+            "efo_trait"
+          ]
+        }
       ]
     },
     "label": [
@@ -1160,7 +1232,10 @@
                 "description": "Study accession ID"
               },
               "pubmed_id": {
-                "type": ["string", "integer"],
+                "type": [
+                  "string",
+                  "integer"
+                ],
                 "description": "PubMed reference (can be string or integer)"
               },
               "first_author": {
@@ -1343,7 +1418,10 @@
                 "description": "Study accession ID"
               },
               "pubmed_id": {
-                "type": ["string", "integer"],
+                "type": [
+                  "string",
+                  "integer"
+                ],
                 "description": "PubMed reference (can be string or integer)"
               },
               "first_author": {
@@ -1488,10 +1566,26 @@
         }
       },
       "oneOf": [
-        {"required": ["disease_trait"]},
-        {"required": ["efo_uri"]},
-        {"required": ["efo_id"]},
-        {"required": ["efo_trait"]}
+        {
+          "required": [
+            "disease_trait"
+          ]
+        },
+        {
+          "required": [
+            "efo_uri"
+          ]
+        },
+        {
+          "required": [
+            "efo_id"
+          ]
+        },
+        {
+          "required": [
+            "efo_trait"
+          ]
+        }
       ]
     },
     "label": [
@@ -1597,7 +1691,10 @@
                 "description": "URL to full summary statistics"
               },
               "pubmed_id": {
-                "type": ["string", "integer"],
+                "type": [
+                  "string",
+                  "integer"
+                ],
                 "description": "PubMed reference (can be string or integer)"
               },
               "terms_of_license": {
@@ -1660,10 +1757,6 @@
     "parameter": {
       "type": "object",
       "properties": {
-        "mapped_gene": {
-          "type": "string",
-          "description": "Gene name or symbol"
-        },
         "size": {
           "type": "integer",
           "description": "Number of results to return per page"
@@ -1671,11 +1764,21 @@
         "page": {
           "type": "integer",
           "description": "Page number for pagination"
+        },
+        "gene_symbol": {
+          "type": "string",
+          "description": "Gene name or symbol (e.g., 'BRCA1', 'TP53', 'GBA')"
+        },
+        "gene": {
+          "type": "string",
+          "description": "Alias for gene_symbol"
+        },
+        "mapped_gene": {
+          "type": "string",
+          "description": "Alias for gene_symbol"
         }
       },
-      "required": [
-        "mapped_gene"
-      ]
+      "required": []
     },
     "label": [
       "GWAS",
@@ -1874,7 +1977,10 @@
                 "description": "Study accession ID"
               },
               "pubmed_id": {
-                "type": ["string", "integer"],
+                "type": [
+                  "string",
+                  "integer"
+                ],
                 "description": "PubMed reference (can be string or integer)"
               },
               "first_author": {

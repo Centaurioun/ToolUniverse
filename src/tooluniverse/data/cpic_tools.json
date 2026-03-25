@@ -237,18 +237,33 @@
   },
   {
     "name": "CPIC_get_gene_drug_pairs",
-    "description": "Get all gene-drug pairs for a pharmacogene from CPIC. Shows which drugs are affected by variants in a specific gene, with CPIC evidence level and PharmGKB clinical annotation level. Evidence levels: A (strongest) to D (weakest). Useful for understanding the clinical significance of a pharmacogene.",
+    "description": "Get all gene-drug pairs for a pharmacogene from CPIC. Shows which drugs are affected by variants in a specific gene, with CPIC evidence level and PharmGKB clinical annotation level. Evidence levels: A (strongest) to D (weakest). Useful for understanding the clinical significance of a pharmacogene. Provide gene as 'genesymbol', 'gene_symbol', or 'gene'.",
     "parameter": {
       "type": "object",
       "properties": {
         "genesymbol": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "Gene symbol (e.g., 'CYP2D6', 'CYP2C19', 'SLCO1B1', 'TPMT', 'DPYD', 'VKORC1')"
+        },
+        "gene_symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Alias for genesymbol (e.g., 'CYP2D6')"
+        },
+        "gene": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Alias for genesymbol (e.g., 'CYP2D6')"
         }
       },
-      "required": [
-        "genesymbol"
-      ]
+      "required": []
     },
     "fields": {
       "endpoint": "https://api.cpicpgx.org/v1/pair?genesymbol=eq.{genesymbol}",
@@ -256,7 +271,7 @@
         "select": "*,drug(name)"
       }
     },
-    "type": "BaseRESTTool",
+    "type": "CPICSearchPairsTool",
     "test_examples": [
       {
         "genesymbol": "CYP2D6"
@@ -295,12 +310,12 @@
                 "type": "string",
                 "description": "CPIC evidence level (A, B, B/C, C, D)"
               },
-              "pgkbcalevel": {
+              "clinpgxlevel": {
                 "type": [
                   "string",
                   "null"
                 ],
-                "description": "PharmGKB clinical annotation level"
+                "description": "CPIC/PharmGKB clinical annotation level (e.g., '1A', '2A', '3')"
               },
               "pgxtesting": {
                 "type": [
@@ -310,7 +325,10 @@
                 "description": "PGx testing recommendation"
               },
               "drug": {
-                "type": ["object", "null"],
+                "type": [
+                  "object",
+                  "null"
+                ],
                 "description": "Embedded drug info from CPIC drug table",
                 "properties": {
                   "name": {
@@ -342,13 +360,27 @@
     "description": "List all CPIC pharmacogenomic guidelines. Returns ~29 evidence-based guidelines (count may vary as guidelines are added/updated) for using pharmacogenomic test results to optimize drug therapy. Each guideline covers one or more gene-drug pairs with specific dosing recommendations based on genotype/phenotype. Includes guideline ID, name, URL, associated genes, and PharmGKB IDs. Use the returned guideline ID with CPIC_get_recommendations to retrieve specific dosing recommendations.",
     "parameter": {
       "type": "object",
-      "properties": {},
+      "properties": {
+        "gene": {
+          "type": "string",
+          "description": "Filter by gene symbol (e.g., CYP2D6, TPMT). Returns only guidelines involving this gene."
+        },
+        "gene_symbol": {
+          "type": "string",
+          "description": "Alias for gene. Filter by gene symbol (e.g., CYP2D6, TPMT)."
+        },
+        "drug": {
+          "type": "string",
+          "description": "Filter by drug name (e.g., 'codeine', 'warfarin', 'clopidogrel'). Case-insensitive substring match against drug names in the guideline."
+        },
+        "drug_name": {
+          "type": "string",
+          "description": "Alias for drug."
+        }
+      },
       "required": []
     },
-    "fields": {
-      "endpoint": "https://api.cpicpgx.org/v1/guideline"
-    },
-    "type": "BaseRESTTool",
+    "type": "CPICListGuidelinesTool",
     "test_examples": [
       {}
     ],
@@ -424,13 +456,21 @@
   },
   {
     "name": "CPIC_get_recommendations",
-    "description": "Get drug dosing recommendations from a specific CPIC pharmacogenomic guideline. Returns clinically actionable recommendations that link genotype/phenotype to drug prescribing actions. Each recommendation includes the classification strength (Strong, Moderate, Optional, No recommendation), the drug recommendation text, allele status context, and clinical implications. Use CPIC_list_guidelines first to obtain valid guideline IDs. Key guideline IDs: 100421 (HLA-B/abacavir), 100416 (CYP2D6,OPRM1,COMT/opioids-codeine), 100414 (CYP2D6,CYP2C19/tricyclic-antidepressants), 100415 (CYP2D6/tamoxifen), 100412 (CYP2C9,HLA-B/phenytoin). Note: warfarin (guideline 100425, CYP2C9/VKORC1) uses a dosing calculator algorithm and returns 0 recommendation rows from this endpoint — refer to the CPIC website or PharmGKB for warfarin dosing.",
+    "description": "Get drug dosing recommendations from a CPIC pharmacogenomic guideline. Returns clinically actionable recommendations linking genotype/phenotype to prescribing actions (classification strength, recommendation text, allele status). Accepts drug name (e.g. 'codeine', 'abacavir') for auto-resolution to guideline_id, or provide guideline_id directly. Key guideline IDs: 100421 (HLA-B/abacavir), 100416 (CYP2D6,OPRM1,COMT/opioids-codeine), 100414 (CYP2D6,CYP2C19/tricyclic-antidepressants), 100415 (CYP2D6/tamoxifen), 100412 (CYP2C9,HLA-B/phenytoin). Note: warfarin (guideline 100425) uses a dosing calculator and returns 0 rows from this endpoint.",
     "parameter": {
       "type": "object",
       "properties": {
         "guideline_id": {
           "type": "integer",
-          "description": "CPIC guideline numeric ID (e.g., 100421 for HLA-B/abacavir, 100416 for CYP2D6/opioids-codeine, 100414 for CYP2D6/tricyclic-antidepressants). Obtain IDs from CPIC_list_guidelines."
+          "description": "CPIC guideline numeric ID. Alternative to drug/drug_name. Use CPIC_list_guidelines to browse IDs."
+        },
+        "drug": {
+          "type": "string",
+          "description": "Drug name to auto-resolve guideline_id (e.g., 'codeine', 'abacavir', 'tamoxifen')."
+        },
+        "drug_name": {
+          "type": "string",
+          "description": "Alias for drug."
         },
         "limit": {
           "type": [
@@ -447,24 +487,17 @@
           "description": "Number of recommendations to skip for pagination (default 0)"
         }
       },
-      "required": [
-        "guideline_id"
-      ]
+      "required": []
     },
-    "fields": {
-      "endpoint": "https://api.cpicpgx.org/v1/recommendation?select=*,drug(name)&guidelineid=eq.{guideline_id}"
-    },
-    "type": "BaseRESTTool",
+    "type": "CPICGetRecommendationsTool",
     "test_examples": [
       {
-        "guideline_id": 100421,
-        "limit": 10,
-        "offset": 0
+        "drug": "codeine",
+        "limit": 10
       },
       {
-        "guideline_id": 100414,
-        "limit": 10,
-        "offset": 0
+        "guideline_id": 100421,
+        "limit": 10
       }
     ],
     "return_schema": {
@@ -573,12 +606,27 @@
             "null"
           ],
           "description": "Maximum number of results to return (default 50)"
+        },
+        "gene_symbol": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Gene symbol alias (e.g., 'CYP2D6', 'VKORC1') \u2014 alternative to genesymbol"
+        },
+        "gene": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Gene symbol alias (e.g., 'CYP2D6') \u2014 alternative to genesymbol"
         }
       },
-      "required": []
+      "required": [],
+      "additionalProperties": false
     },
     "fields": {
-      "endpoint": "https://api.cpicpgx.org/v1/pair?select=genesymbol,drugid,cpiclevel,guidelineid,usedforrecommendation,pgkbcalevel"
+      "endpoint": "https://api.cpicpgx.org/v1/pair?select=genesymbol,drugid,cpiclevel,guidelineid,usedforrecommendation,clinpgxlevel,pgxtesting"
     },
     "type": "CPICSearchPairsTool",
     "test_examples": [
@@ -622,12 +670,12 @@
                 "type": "boolean",
                 "description": "Whether this pair is used for clinical recommendations"
               },
-              "pgkbcalevel": {
+              "clinpgxlevel": {
                 "type": [
                   "string",
                   "null"
                 ],
-                "description": "PharmGKB clinical annotation level (e.g., '1A', '2A', '3')"
+                "description": "CPIC/PharmGKB clinical annotation level (e.g., '1A', '2A', '3')"
               }
             }
           }

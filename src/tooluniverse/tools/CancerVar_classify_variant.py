@@ -1,36 +1,39 @@
 """
-pc_search_pathways
+CancerVar_classify_variant
 
-Searches for biological pathways in Pathway Commons (PC2). Use this tool to find pathways related...
+Classify a somatic cancer variant using AMP/ASCO/CAP 2017 guidelines (CancerVar). Returns a Tier ...
 """
 
 from typing import Any, Optional, Callable
 from ._shared_client import get_shared_client
 
 
-def pc_search_pathways(
-    action: str,
-    keyword: str,
-    datasource: Optional[str] = None,
-    limit: Optional[int] = 10,
+def CancerVar_classify_variant(
+    chrom: str,
+    pos: int,
+    ref: str,
+    alt: str,
+    build: Optional[str] = "hg19",
     *,
     stream_callback: Optional[Callable[[str], None]] = None,
     use_cache: bool = False,
     validate: bool = True,
 ) -> dict[str, Any]:
     """
-    Searches for biological pathways in Pathway Commons (PC2). Use this tool to find pathways related...
+    Classify a somatic cancer variant using AMP/ASCO/CAP 2017 guidelines (CancerVar). Returns a Tier ...
 
     Parameters
     ----------
-    action : str
-        The specific action to perform. Must be set to 'search_pathways'.
-    keyword : str
-        The search keyword to identify pathways. Examples include specific genes ('p5...
-    datasource : str
-        Filter results by the original data source (e.g., 'reactome', 'kegg', 'panthe...
-    limit : int
-        The maximum number of pathway results to return. The default is 10.
+    chrom : str
+        Chromosome number or name. Can include 'chr' prefix (e.g., '7', 'chr7', 'X').
+    pos : int
+        Genomic position (1-based).
+    ref : str
+        Reference allele (e.g., 'A', 'G', 'ATCG').
+    alt : str
+        Alternate allele (e.g., 'T', 'C').
+    build : str
+        Genome build. Default: hg19.
     stream_callback : Callable, optional
         Callback for streaming output
     use_cache : bool, default False
@@ -48,16 +51,17 @@ def pc_search_pathways(
     _args = {
         k: v
         for k, v in {
-            "action": action,
-            "keyword": keyword,
-            "datasource": datasource,
-            "limit": limit,
+            "chrom": chrom,
+            "pos": pos,
+            "ref": ref,
+            "alt": alt,
+            "build": build,
         }.items()
         if v is not None
     }
     return get_shared_client().run_one_function(
         {
-            "name": "pc_search_pathways",
+            "name": "CancerVar_classify_variant",
             "arguments": _args,
         },
         stream_callback=stream_callback,
@@ -66,4 +70,4 @@ def pc_search_pathways(
     )
 
 
-__all__ = ["pc_search_pathways"]
+__all__ = ["CancerVar_classify_variant"]

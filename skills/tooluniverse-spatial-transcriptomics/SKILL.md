@@ -155,6 +155,49 @@ See [report_template.md](report_template.md) for full example output.
 | `tooluniverse-gene-enrichment` | Pathway enrichment for spatial domains | Phase 3 |
 | `tooluniverse-multi-omics-integration` | Integrate with other omics | Phase 8 |
 
+## ToolUniverse Data Retrieval Tools
+
+### HuBMAP Spatial Atlas Tools
+
+Use HuBMAP tools to discover published spatial biology datasets for reference, validation, or cross-study comparison.
+
+> **Availability Note**: `HuBMAP_search_datasets`, `HuBMAP_list_organs`, and `HuBMAP_get_dataset` may not be registered in your ToolUniverse instance. Verify with `tu.list_tools()` before use. If unavailable, use **OmicsDI** (`OmicsDI_search_datasets(query="spatial transcriptomics kidney")`) or **CELLxGENE** (`CELLxGENE_get_cell_metadata`) as reliable alternatives for spatial dataset discovery.
+
+| Tool | Purpose | Key Parameters |
+|------|---------|----------------|
+| `HuBMAP_search_datasets` | Search HuBMAP published datasets by organ, assay, or keyword | `organ` (code, e.g. "LK"="Left Kidney", "BR"="Brain"), `dataset_type` (e.g. "RNAseq", "CODEX", "MALDI"), `query` (free text), `limit` (default 10) |
+| `HuBMAP_list_organs` | List all organs with codes and UBERON IDs | (no required params) |
+| `HuBMAP_get_dataset` | Get detailed metadata for a specific dataset | `hubmap_id` (e.g. "HBM626.FHJD.938") |
+
+**Organ codes**: LK=Left Kidney, RK=Right Kidney, LI=Large Intestine, SI=Small Intestine, HT=Heart, LV=Liver, LU=Lung, SP=Spleen, TH=Thymus, LY=Lymph Node, BL=Bladder, PA=Pancreas, SK=Skin, BR=Brain, BM=Bone Marrow, MU=Muscle.
+
+**Assay types**: RNAseq, CODEX, MALDI, snATACseq, LC-MS, scRNAseq-10xGenomics-v3, and more.
+
+**When to use**:
+- Finding reference spatial datasets for a given organ/tissue
+- Identifying available spatial assay types (Visium, CODEX, MERFISH) for a tissue
+- Cross-referencing donor metadata (age, sex) for spatial datasets
+- Retrieving DOI links for published spatial atlas datasets
+
+**Fallback if HuBMAP tools unavailable**:
+```python
+# Use OmicsDI for spatial dataset discovery
+result = tu.tools.OmicsDI_search_datasets(query="spatial transcriptomics kidney Visium")
+
+# Use CELLxGENE for cell-level expression context
+result = tu.tools.CELLxGENE_get_cell_metadata(tissue="kidney")
+```
+
+```python
+# Example: Find spatial datasets for kidney (if HuBMAP tools available)
+result = tu.tools.HuBMAP_search_datasets(organ="LK", limit=5)
+# Returns: {data: {total, returned, datasets: [{hubmap_id, title, dataset_type, organ, doi_url, ...}]}}
+
+# Example: Get all available organs
+organs = tu.tools.HuBMAP_list_organs()
+# Returns: {data: {total, organs: [{code, term, organ_uberon, rui_supported}]}}
+```
+
 ---
 
 ## Example Use Cases

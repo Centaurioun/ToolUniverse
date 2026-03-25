@@ -2,13 +2,10 @@
   {
     "type": "FAERSAnalyticsTool",
     "name": "FAERS_calculate_disproportionality",
-    "description": "Calculate statistical disproportionality measures (ROR, PRR, IC) with 95% CI for drug-event pairs. Returns signal strength classification. Example: drug='ibuprofen', event='hepatotoxicity' → ROR=2.3 [1.8-2.9]. Use for pharmacovigilance signal detection.",
+    "description": "Calculate statistical disproportionality measures (ROR, PRR, IC) with 95% CI for drug-event pairs. Returns signal strength classification. Example: drug='ibuprofen', event='hepatotoxicity' \u2192 ROR=2.3 [1.8-2.9]. Use for pharmacovigilance signal detection.",
     "parameter": {
       "type": "object",
-      "required": [
-        "drug_name",
-        "adverse_event"
-      ],
+      "required": [],
       "properties": {
         "operation": {
           "const": "calculate_disproportionality",
@@ -20,45 +17,20 @@
         },
         "adverse_event": {
           "type": "string",
-          "description": "MedDRA Preferred Term (e.g., 'Hepatotoxicity', 'Myopathy')"
+          "description": "MedDRA Preferred Term (e.g., 'Hepatotoxicity', 'Myopathy'). Use exact MedDRA Preferred Term capitalization (e.g., \"Haemorrhage\" not \"hemorrhage\")."
+        },
+        "reaction": {
+          "type": "string",
+          "description": "Alias for adverse_event. MedDRA Preferred Term for the adverse drug reaction."
+        },
+        "drug": {
+          "type": "string",
+          "description": "Alias for drug_name. Generic drug name."
         }
       }
     },
     "return_schema": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string",
-          "enum": [
-            "success",
-            "error"
-          ]
-        },
-        "drug_name": {
-          "type": "string"
-        },
-        "adverse_event": {
-          "type": "string"
-        },
-        "contingency_table": {
-          "type": "object"
-        },
-        "metrics": {
-          "type": "object"
-        },
-        "signal_detection": {
-          "type": "object"
-        },
-        "note": {
-          "type": "string"
-        },
-        "error": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "status"
-      ]
+      "type": "object"
     },
     "test_examples": [
       {
@@ -70,13 +42,10 @@
   {
     "type": "FAERSAnalyticsTool",
     "name": "FAERS_stratify_by_demographics",
-    "description": "Stratify adverse event reports by demographics (sex, age group, country). Returns counts and percentages by demographic group. Example: ibuprofen + GI bleeding stratified by sex → Female: 60%, Male: 40%. Use for subpopulation risk assessment.",
+    "description": "Stratify adverse event reports by demographics (sex, age group, country). Returns counts and percentages by demographic group. Example: ibuprofen + GI bleeding stratified by sex \u2192 Female: 60%, Male: 40%. Use for subpopulation risk assessment.",
     "parameter": {
       "type": "object",
-      "required": [
-        "drug_name",
-        "adverse_event"
-      ],
+      "required": [],
       "properties": {
         "operation": {
           "const": "stratify_by_demographics",
@@ -88,7 +57,7 @@
         },
         "adverse_event": {
           "type": "string",
-          "description": "MedDRA Preferred Term"
+          "description": "MedDRA Preferred Term. Use exact MedDRA Preferred Term capitalization (e.g., \"Haemorrhage\" not \"hemorrhage\")."
         },
         "stratify_by": {
           "type": "string",
@@ -98,42 +67,29 @@
             "country"
           ],
           "default": "sex",
-          "description": "Demographic dimension to stratify by"
+          "description": "Demographic dimension to stratify by. Use \"sex\", \"age\", or \"country\" (\"age_group\" is also accepted as alias for \"age\")."
+        },
+        "reaction": {
+          "type": "string",
+          "description": "Alias for adverse_event. MedDRA Preferred Term for the adverse drug reaction (e.g., \"hemorrhage\", \"nausea\")."
+        },
+        "demographic": {
+          "type": "string",
+          "enum": [
+            "sex",
+            "age",
+            "country"
+          ],
+          "description": "Alias for stratify_by. Demographic dimension to stratify by (sex, age, or country)."
+        },
+        "drug": {
+          "type": "string",
+          "description": "Alias for drug_name. Generic drug name."
         }
       }
     },
     "return_schema": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string",
-          "enum": [
-            "success",
-            "error"
-          ]
-        },
-        "drug_name": {
-          "type": "string"
-        },
-        "adverse_event": {
-          "type": "string"
-        },
-        "stratified_by": {
-          "type": "string"
-        },
-        "total_reports": {
-          "type": "integer"
-        },
-        "stratification": {
-          "type": "array"
-        },
-        "error": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "status"
-      ]
+      "type": "object"
     },
     "test_examples": [
       {
@@ -146,12 +102,10 @@
   {
     "type": "FAERSAnalyticsTool",
     "name": "FAERS_filter_serious_events",
-    "description": "Filter for serious adverse events (death, hospitalization, disability, life-threatening). Returns top reactions meeting seriousness criteria. Example: fulvestrant serious events → Death: 150 cases, Hospitalization: 500 cases. Use for risk-benefit assessment.",
+    "description": "Filter for serious adverse events (death, hospitalization, disability, life-threatening). Returns top reactions meeting seriousness criteria. Example: fulvestrant serious events \u2192 Death: 150 cases, Hospitalization: 500 cases. Use for risk-benefit assessment.",
     "parameter": {
       "type": "object",
-      "required": [
-        "drug_name"
-      ],
+      "required": [],
       "properties": {
         "operation": {
           "const": "filter_serious_events",
@@ -172,41 +126,23 @@
           ],
           "default": "all",
           "description": "Type of serious event to filter"
+        },
+        "drug": {
+          "type": "string",
+          "description": "Alias for drug_name. Generic drug name."
+        },
+        "event_type": {
+          "type": "string",
+          "description": "Alias for seriousness_type. Type of serious event (e.g., hospitalization, death, life_threatening)."
+        },
+        "adverse_event": {
+          "type": "string",
+          "description": "Specific adverse event MedDRA term to filter within serious events (e.g., MYOCARDIAL INFARCTION, DEATH). Use uppercase MedDRA PT terms."
         }
       }
     },
     "return_schema": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string",
-          "enum": [
-            "success",
-            "error"
-          ]
-        },
-        "drug_name": {
-          "type": "string"
-        },
-        "seriousness_type": {
-          "type": "string"
-        },
-        "total_serious_events": {
-          "type": "integer"
-        },
-        "top_serious_reactions": {
-          "type": "array"
-        },
-        "note": {
-          "type": "string"
-        },
-        "error": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "status"
-      ]
+      "type": "object"
     },
     "test_examples": [
       {
@@ -221,11 +157,7 @@
     "description": "Compare safety signals for two drugs with the same adverse event. Returns ROR/PRR/IC for both drugs with comparative analysis. Example: compare fulvestrant vs tamoxifen for hepatotoxicity. Use for safety benchmarking.",
     "parameter": {
       "type": "object",
-      "required": [
-        "drug1",
-        "drug2",
-        "adverse_event"
-      ],
+      "required": [],
       "properties": {
         "operation": {
           "const": "compare_drugs",
@@ -241,42 +173,23 @@
         },
         "adverse_event": {
           "type": "string",
-          "description": "MedDRA Preferred Term to compare"
+          "description": "MedDRA Preferred Term to compare. Use exact MedDRA Preferred Term capitalization (e.g., \"Haemorrhage\" not \"hemorrhage\")."
+        },
+        "reaction": {
+          "type": "string",
+          "description": "Alias for adverse_event. MedDRA Preferred Term for the adverse drug reaction."
+        },
+        "drugs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Alias for drug1/drug2. List of two drug names to compare, e.g., [\"tofacitinib\", \"baricitinib\"]."
         }
       }
     },
     "return_schema": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string",
-          "enum": [
-            "success",
-            "error"
-          ]
-        },
-        "adverse_event": {
-          "type": "string"
-        },
-        "drug1": {
-          "type": "object"
-        },
-        "drug2": {
-          "type": "object"
-        },
-        "comparison": {
-          "type": "string"
-        },
-        "note": {
-          "type": "string"
-        },
-        "error": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "status"
-      ]
+      "type": "object"
     },
     "test_examples": [
       {
@@ -289,12 +202,10 @@
   {
     "type": "FAERSAnalyticsTool",
     "name": "FAERS_analyze_temporal_trends",
-    "description": "Analyze temporal trends in adverse event reporting by year. Returns yearly counts and trend direction (increasing/decreasing/stable). Example: ibuprofen GI bleeding reports 2015-2025 → +25% increase. Use for signal evolution monitoring.",
+    "description": "Analyze temporal trends in adverse event reporting by year. Returns yearly counts and trend direction (increasing/decreasing/stable). Example: ibuprofen GI bleeding reports 2015-2025 \u2192 +25% increase. Use for signal evolution monitoring.",
     "parameter": {
       "type": "object",
-      "required": [
-        "drug_name"
-      ],
+      "required": [],
       "properties": {
         "operation": {
           "const": "analyze_temporal_trends",
@@ -306,42 +217,20 @@
         },
         "adverse_event": {
           "type": "string",
-          "description": "MedDRA Preferred Term (optional, omit for all events)"
+          "description": "MedDRA Preferred Term (optional, omit for all events). Use exact MedDRA Preferred Term capitalization (e.g., \"Haemorrhage\" not \"hemorrhage\")."
+        },
+        "reaction": {
+          "type": "string",
+          "description": "Alias for adverse_event. MedDRA Preferred Term for the adverse drug reaction."
+        },
+        "drug": {
+          "type": "string",
+          "description": "Alias for drug_name. Generic drug name."
         }
       }
     },
     "return_schema": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string",
-          "enum": [
-            "success",
-            "error"
-          ]
-        },
-        "drug_name": {
-          "type": "string"
-        },
-        "adverse_event": {
-          "type": "string"
-        },
-        "temporal_data": {
-          "type": "array"
-        },
-        "trend_analysis": {
-          "type": "object"
-        },
-        "note": {
-          "type": "string"
-        },
-        "error": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "status"
-      ]
+      "type": "object"
     },
     "test_examples": [
       {
@@ -356,9 +245,7 @@
     "description": "Aggregate adverse events by MedDRA hierarchy (Preferred Term level). Returns top 50 PTs with counts. Note: Full HLT/SOC hierarchy requires MedDRA license. Use for adverse event profile overview.",
     "parameter": {
       "type": "object",
-      "required": [
-        "drug_name"
-      ],
+      "required": [],
       "properties": {
         "operation": {
           "const": "rollup_meddra_hierarchy",
@@ -367,38 +254,15 @@
         "drug_name": {
           "type": "string",
           "description": "Generic drug name"
+        },
+        "drug": {
+          "type": "string",
+          "description": "Alias for drug_name. Generic drug name."
         }
       }
     },
     "return_schema": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string",
-          "enum": [
-            "success",
-            "error"
-          ]
-        },
-        "drug_name": {
-          "type": "string"
-        },
-        "meddra_hierarchy": {
-          "type": "object"
-        },
-        "note": {
-          "type": "string"
-        },
-        "recommendation": {
-          "type": "string"
-        },
-        "error": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "status"
-      ]
+      "type": "object"
     },
     "test_examples": [
       {

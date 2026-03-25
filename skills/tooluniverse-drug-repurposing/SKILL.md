@@ -56,7 +56,7 @@ targets = tu.tools.OpenTargets_get_associated_targets_by_disease_efoId(efoId=dis
 
 # Step 2: Find drugs for each target
 for target in targets['data'][:5]:
-    drugs = tu.tools.DGIdb_get_drug_gene_interactions(gene_name=target['gene_symbol'])
+    drugs = tu.tools.DGIdb_get_drug_gene_interactions(genes=[target['gene_symbol']])
 ```
 
 ---
@@ -87,10 +87,15 @@ for target in targets['data'][:5]:
 - `drugbank_get_drug_interactions_by_drug_name_or_id` - Interactions
 
 **Property Prediction**:
-- `ADMETAI_predict_admet` / `ADMETAI_predict_toxicity` - ADMET and toxicity
+- `ADMETAI_predict_physicochemical_properties` / `ADMETAI_predict_toxicity` - ADMET and toxicity
+
+**Pathway & Network Analysis**:
+- `ReactomeAnalysis_pathway_enrichment` - Pathway enrichment for target gene sets
+- `STRING_get_network` - Protein interaction networks for target validation
+- `CTD_get_gene_diseases` - Curated gene-disease associations
 
 **Literature**:
-- `PubMed_search_articles` / `EuropePMC_search_articles` / `ClinicalTrials_search`
+- `PubMed_search_articles` / `EuropePMC_search_articles` / `search_clinical_trials`
 
 ---
 

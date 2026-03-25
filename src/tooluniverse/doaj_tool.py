@@ -25,10 +25,13 @@ class DOAJTool(BaseTool):
         max_results = int(arguments.get("max_results", 10))
 
         if not query:
-            return {"error": "`query` parameter is required."}
+            return {"status": "error", "error": "`query` parameter is required."}
 
         if search_type not in ["articles", "journals"]:
-            return {"error": "`type` must be 'articles' or 'journals'."}
+            return {
+                "status": "error",
+                "error": "`type` must be 'articles' or 'journals'.",
+            }
 
         endpoint = f"{self.base_url}/{search_type}/{query}"
         params = {
@@ -40,12 +43,14 @@ class DOAJTool(BaseTool):
             data = resp.json()
         except requests.RequestException as e:
             return {
+                "status": "error",
                 "error": "Network/API error calling DOAJ",
                 "reason": str(e),
             }
         except ValueError:
             ct = resp.headers.get("content-type", "")
             return {
+                "status": "error",
                 "error": "Failed to decode DOAJ response as JSON",
                 "content_type": ct,
                 "response_snippet": resp.text[:200],

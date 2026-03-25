@@ -6,9 +6,14 @@
     "parameter": {
       "type": "object",
       "properties": {
-        "rsid": {"type": "string", "description": "dbSNP rsID (e.g., 'rs4994', 'rs429358')"}
+        "rsid": {
+          "type": "string",
+          "description": "dbSNP rsID (e.g., 'rs4994', 'rs429358')"
+        }
       },
-      "required": ["rsid"]
+      "required": [
+        "rsid"
+      ]
     },
     "fields": {
       "endpoint": "https://regulomedb.org/regulome-search/?regions={rsid}&genome=GRCh38",
@@ -20,8 +25,21 @@
           "type": "object",
           "description": "Successful regulatory annotation",
           "properties": {
-            "total": {"type": "integer", "description": "Number of variants matched"},
-            "results": {
+            "rsid": {"type": "string"},
+            "assembly": {"type": ["string", "null"]},
+            "query_coordinates": {
+              "type": ["array", "null"],
+              "items": {"type": "string"}
+            },
+            "regulome_score": {
+              "type": ["object", "null"],
+              "properties": {
+                "probability": {"type": ["string", "null"]},
+                "ranking": {"type": ["string", "null"]},
+                "tissue_specific_scores": {"type": ["object", "null"]}
+              }
+            },
+            "variants": {
               "type": "array",
               "items": {
                 "type": "object",
@@ -29,43 +47,34 @@
                   "chrom": {"type": "string"},
                   "start": {"type": "integer"},
                   "end": {"type": "integer"},
-                  "rsids": {"type": "array", "items": {"type": "string"}},
-                  "regulome_score": {
-                    "type": "object",
-                    "properties": {
-                      "ranking": {"type": "integer"},
-                      "probability": {"type": "number"}
-                    }
-                  },
-                  "features": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "type": {"type": "string"},
-                        "value": {"type": "string"}
-                      }
-                    }
-                  }
+                  "rsids": {"type": "array", "items": {"type": "string"}}
                 }
               }
             },
-            "query_coordinates": {"type": "string"},
-            "genome": {"type": "string"}
-          }
+            "features": {"type": ["object", "array", "null"]},
+            "nearby_snps": {"type": "array"},
+            "notifications": {"type": ["object", "null"]},
+            "total_supporting_datasets": {"type": "integer"}
+          },
+          "required": ["rsid", "regulome_score", "variants"]
         },
         {
           "type": "object",
           "description": "Error response",
           "properties": {
             "error": {"type": "string"}
-          }
+          },
+          "required": ["error"]
         }
       ]
     },
     "test_examples": [
-      {"rsid": "rs4994"},
-      {"rsid": "rs429358"}
+      {
+        "rsid": "rs4994"
+      },
+      {
+        "rsid": "rs429358"
+      }
     ]
   }
 ]
