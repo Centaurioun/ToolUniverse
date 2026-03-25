@@ -209,7 +209,7 @@ Aggregate all findings into final report. Grade every candidate. Provide 3+ imme
 |--------------|------------|------------|
 | `NvidiaNIM_alphafold2` | `alphafold_get_prediction` | `NvidiaNIM_esmfold` |
 | `NvidiaNIM_diffdock` | `NvidiaNIM_boltz2` | Manual docking |
-| `NCBI_Taxonomy_search` | `UniProt_taxonomy` | Manual classification |
+| `NCBIDatasets_suggest_taxonomy` | `UniProt_taxonomy` | Manual classification |
 | `ChEMBL_search_drugs` | `drugbank_vocab_search` | PubChem bioassays |
 
 ---

@@ -83,12 +83,13 @@ Before full ACMG classification, check if the variant already has an expert pane
 
 **Primary approach:** `MyVariant_query_variants` with `fields=dbnsfp,clinvar,cadd,gnomad_genome` retrieves 15+ predictor scores (SIFT, PolyPhen, CADD, REVEL, AlphaMissense, MetaRNN, FATHMM, GERP, PhyloP, etc.) in a single call. This is usually sufficient.
 
-**REVEL/AlphaMissense fallback**: If MyVariant returns no `dbnsfp` block (common for some variants), use individual tools:
-1. `CADD_get_variant_score` (PHRED 0-99) — works for most variants
-2. `AlphaMissense_get_variant_score` (0-1, needs UniProt ID) — missense only
-3. `EVE_get_variant_score` (0-1) — missense only
-4. `EnsemblVEP_annotate_hgvs` (VEP with colocated variants, HGMD cross-references, and ancestry-specific gnomAD frequencies) — includes SIFT/PolyPhen and can return REVEL via plugin
-5. If REVEL is still unavailable, note this as a limitation and rely on CADD + SIFT + PolyPhen consensus. REVEL absence does not prevent classification.
+**REVEL/AlphaMissense fallback**: If `MyVariant_query_variants` returns no `dbnsfp` block, use the dedicated tool:
+1. **`MyVariant_get_pathogenicity_scores`** (PREFERRED FALLBACK) — returns REVEL, AlphaMissense, SIFT, PolyPhen2, MetaRNN, GERP, PhyloP, and more in a single call with pre-configured dbnsfp fields. Input: `variant_id` (rsID or HGVS genomic).
+2. `CADD_get_variant_score` (PHRED 0-99) — works for most variants
+3. `AlphaMissense_get_variant_score` (0-1, needs UniProt ID) — missense only
+4. `EVE_get_variant_score` (0-1) — missense only
+5. `EnsemblVEP_annotate_hgvs` (VEP with colocated variants) — includes SIFT/PolyPhen
+6. If REVEL is still unavailable, note this as a limitation and rely on CADD + SIFT + PolyPhen consensus. REVEL absence does not prevent classification.
 
 Consensus: Run CADD (all variants) + AlphaMissense + EVE (missense). 2+ concordant damaging = strong PP3; 2+ concordant benign = strong BP4.
 

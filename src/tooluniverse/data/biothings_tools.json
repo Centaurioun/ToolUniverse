@@ -82,7 +82,10 @@
                                 "description": "Full gene name"
                             },
                             "entrezgene": {
-                                "type": ["integer", "string"],
+                                "type": [
+                                    "integer",
+                                    "string"
+                                ],
                                 "description": "Entrez Gene ID"
                             },
                             "ensembl": {
@@ -153,7 +156,10 @@
                     "description": "Full gene name"
                 },
                 "entrezgene": {
-                    "type": ["integer", "string"],
+                    "type": [
+                        "integer",
+                        "string"
+                    ],
                     "description": "Entrez Gene ID"
                 },
                 "ensembl": {
@@ -277,7 +283,10 @@
                                 "type": "string"
                             },
                             "entrezgene": {
-                                "type": ["integer", "string"]
+                                "type": [
+                                    "integer",
+                                    "string"
+                                ]
                             },
                             "notfound": {
                                 "type": "boolean",
@@ -653,6 +662,62 @@
                     }
                 }
             }
+        }
+    },
+    {
+        "name": "MyVariant_get_pathogenicity_scores",
+        "description": "Get comprehensive pathogenicity prediction scores for a variant from dbNSFP. Returns REVEL, CADD, AlphaMissense, SIFT, PolyPhen-2, MetaRNN, GERP, PhyloP, and PhastCons scores in a single call. Use this when MyVariant_query_variants does not return dbnsfp data, or when you specifically need REVEL/AlphaMissense scores for ACMG PP3/BP4 classification.",
+        "parameter": {
+            "type": "object",
+            "properties": {
+                "variant_id": {
+                    "type": "string",
+                    "description": "Variant ID: rsID (e.g., rs45478192) or HGVS genomic (e.g., chr16:g.23635348A>C). Both formats work."
+                },
+                "fields": {
+                    "type": "string",
+                    "description": "Fields to return (pre-configured for pathogenicity scores)",
+                    "default": "dbnsfp.revel.score,dbnsfp.cadd.phred,dbnsfp.alphamissense.score,dbnsfp.alphamissense.pred,dbnsfp.sift.score,dbnsfp.sift.pred,dbnsfp.polyphen2_hdiv.score,dbnsfp.polyphen2_hdiv.pred,dbnsfp.metarnn.score,dbnsfp.metarnn.pred,dbnsfp.gerp_rs,dbnsfp.phylop100way_vertebrate.rankscore,dbnsfp.phastcons100way_vertebrate.rankscore,dbnsfp.vest4.score,dbnsfp.mutationtaster.pred,clinvar.rcv.clinical_significance,dbsnp.rsid"
+                }
+            },
+            "required": [
+                "variant_id"
+            ]
+        },
+        "fields": {
+            "operation": "get_variant"
+        },
+        "type": "MyVariantTool",
+        "test_examples": [
+            {
+                "variant_id": "rs45478192"
+            },
+            {
+                "variant_id": "chr17:g.43092919G>A"
+            }
+        ],
+        "return_schema": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "data": {
+                            "type": "object"
+                        },
+                        "metadata": {
+                            "type": "object"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "error": {
+                            "type": "string"
+                        }
+                    }
+                }
+            ]
         }
     }
 ]

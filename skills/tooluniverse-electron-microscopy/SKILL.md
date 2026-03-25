@@ -86,12 +86,16 @@ Identify from the user's request:
 **Objective**: Find EM density maps matching the query.
 
 **Tools**:
-- `EMDB_search_entries` -- search EMDB by keyword, organism, resolution
+- `EMDB_search_structures` -- search EMDB by keyword, organism, resolution
   - Input: `query` (search term), optional `resolution_min`, `resolution_max`, `method`, `limit`
   - Output: entries with EMDB ID, title, resolution, method, sample
-- `EMDB_get_entry` -- get full details for an EMDB entry
+- `EMDB_get_structure` -- get full details for an EMDB entry
   - Input: `emdb_id` (e.g., "EMD-1234")
   - Output: map details, resolution, sample, processing info, citations
+- `EMDB_get_map_info` -- get map-specific info (resolution, contour, dimensions)
+  - Input: `emdb_id`
+- `EMDB_get_sample_info` -- get sample preparation details
+  - Input: `emdb_id`
 
 **Workflow**:
 1. Search EMDB for the target protein/complex
@@ -111,7 +115,7 @@ Identify from the user's request:
 **Objective**: Find atomic models fitted into EM maps and assess fitting quality.
 
 **Tools**:
-- `EMDB_get_entry_fitting` -- get fitting/validation data for an EMDB entry
+- `EMDB_get_validation` -- get fitting/validation data for an EMDB entry
   - Input: `emdb_id`
   - Output: fitted PDB models, fitting statistics, validation scores
 - `RCSBData_get_entry` -- get PDB entry details
@@ -161,13 +165,13 @@ Identify from the user's request:
 **Objective**: Find cryo-electron tomography datasets for cellular and in-situ structural biology.
 
 **Tools**:
-- `CryoET_search_datasets` -- search CryoET Data Portal
+- `CryoET_list_datasets` -- search CryoET Data Portal
   - Input: `query` (search term), optional `organism`, `limit`
   - Output: datasets with ID, title, organism, sample type
 - `CryoET_get_dataset` -- get dataset details
   - Input: `dataset_id`
   - Output: sample details, tilt series parameters, tomogram info
-- `CryoET_search_runs` -- search individual tomography runs
+- `CryoET_list_runs` -- search individual tomography runs
   - Input: `dataset_id` or `query`, optional `limit`
   - Output: run details, tilt parameters, voxel spacing
 
