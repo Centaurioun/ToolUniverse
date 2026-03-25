@@ -120,48 +120,110 @@ If the user provides a ranked list (e.g., by MAGeCK score or BAGEL BF), preserve
 - Chronos score < -1.0: strongly essential
 - Compare to median across all lines to assess selectivity
 
-**DepMap API limitation and workaround**: The `DepMap_get_gene_dependencies` tool returns gene metadata only (not per-cell-line CRISPR scores). For actual dependency data, use the DepMap data download approach:
+**DepMap API limitation and workaround**: The `DepMap_get_gene_dependencies` tool (Sanger Cell Model Passports API) returns gene metadata only — NOT per-cell-line CRISPR dependency scores. For actual Chronos scores, download data files from the DepMap portal and process locally.
+
+**Step 1: Download DepMap data files**
+
+Go to https://depmap.org/portal/download/all/ and download these files (registration required, free):
+- **CRISPRGeneEffect.csv** (~300MB) — Chronos gene effect scores. Rows = cell lines (ACH-XXXXXX), columns = genes ("GENE (ENTREZ_ID)"). Negative = essential.
+- **Model.csv** (~2MB) — Cell line metadata: name, lineage, cancer type, mutations.
+- **OmicsExpressionProteinCodingGenesTPMLogp1.csv** (optional, ~500MB) — RNA-seq expression.
+
+Alternatively, download via the DepMap Python client:
+```bash
+pip install depmap-client  # if available
+```
+
+Or use direct download links from the DepMap release page (URLs change each quarter — check the portal for the current release, e.g., "DepMap Public 24Q4").
+
+**Step 2: Analyze dependency data**
 
 ```python
 # Computational procedure: DepMap CRISPR dependency analysis
-# Requires: pandas (included in ToolUniverse dependencies)
+# Requires: pandas, scipy (both in ToolUniverse dependencies)
+# Input: CRISPRGeneEffect.csv and Model.csv from DepMap portal
 import pandas as pd
+import os
 
-# Download CRISPRGeneEffect.csv from DepMap portal (one-time setup)
-# https://depmap.org/portal/download/all/ → CRISPR (DepMap Public 24Q4)
-# File: CRISPRGeneEffect.csv (~300MB)
-depmap_url = "https://ndownloader.figshare.com/files/XXXXX"  # check depmap.org for current URL
+# --- Configuration ---
+depmap_dir = "."  # directory containing downloaded DepMap files
+gene_symbol = "PTPN11"  # SHP2 - change to your gene of interest
+lineage = "Lung"  # OncotreeLineage to test selectivity against
 
-# Load and query
-df = pd.read_csv("CRISPRGeneEffect.csv", index_col=0)
-# Columns are "GENE (ENTREZ_ID)" format, e.g., "SOD1 (6647)"
-# Rows are DepMap model IDs, e.g., "ACH-000001"
+# --- Load data ---
+effect_file = os.path.join(depmap_dir, "CRISPRGeneEffect.csv")
+model_file = os.path.join(depmap_dir, "Model.csv")
 
-# Find your gene
-gene_col = [c for c in df.columns if c.startswith("PTPN11 ")]  # SHP2
-if gene_col:
-    scores = df[gene_col[0]].dropna()
+if not os.path.exists(effect_file):
+    print(f"ERROR: {effect_file} not found.")
+    print("Download from: https://depmap.org/portal/download/all/")
+    print("Look for: CRISPR (DepMap Public) → CRISPRGeneEffect.csv")
+else:
+    df = pd.read_csv(effect_file, index_col=0)
+    meta = pd.read_csv(model_file)
 
-    # Selective essentiality analysis
-    median_score = scores.median()
-    # Load cell line metadata to filter by lineage
-    meta = pd.read_csv("Model.csv")  # from same DepMap download
-    lung_ids = meta[meta['OncotreeLineage'] == 'Lung']['ModelID']
+    # --- Find gene column ---
+    # Columns are "GENE (ENTREZ_ID)" format, e.g., "PTPN11 (5781)"
+    gene_col = [c for c in df.columns if c.startswith(f"{gene_symbol} (")]
+    if not gene_col:
+        # Try case-insensitive
+        gene_col = [c for c in df.columns if c.upper().startswith(f"{gene_symbol.upper()} (")]
 
-    lung_scores = scores[scores.index.isin(lung_ids)]
-    other_scores = scores[~scores.index.isin(lung_ids)]
+    if not gene_col:
+        print(f"Gene {gene_symbol} not found in DepMap columns")
+        print(f"Available genes starting with {gene_symbol[0]}: "
+              f"{[c for c in df.columns if c.startswith(gene_symbol[0])][:10]}")
+    else:
+        scores = df[gene_col[0]].dropna()
+        print(f"\n=== {gene_symbol} dependency across {len(scores)} cell lines ===")
+        print(f"Median (all): {scores.median():.3f}")
+        print(f"Mean (all):   {scores.mean():.3f}")
+        print(f"% essential (< -0.5): {(scores < -0.5).mean()*100:.1f}%")
+        print(f"% strongly essential (< -1.0): {(scores < -1.0).mean()*100:.1f}%")
 
-    print(f"Median (all): {median_score:.3f}")
-    print(f"Median (lung): {lung_scores.median():.3f}")
-    print(f"Median (other): {other_scores.median():.3f}")
+        # --- Selective essentiality ---
+        # Merge with metadata to split by lineage
+        meta_idx = meta.set_index('ModelID')
+        lineage_ids = meta[meta['OncotreeLineage'] == lineage]['ModelID']
+        in_lineage = scores[scores.index.isin(lineage_ids)]
+        out_lineage = scores[~scores.index.isin(lineage_ids)]
 
-    # Selectivity = difference between lineage and pan-cancer
-    from scipy.stats import mannwhitneyu
-    stat, pval = mannwhitneyu(lung_scores, other_scores, alternative='less')
-    print(f"Selective in lung? p={pval:.2e}")
+        print(f"\n=== Selectivity: {lineage} vs rest ===")
+        print(f"{lineage} lines (n={len(in_lineage)}): median={in_lineage.median():.3f}")
+        print(f"Other lines (n={len(out_lineage)}):  median={out_lineage.median():.3f}")
+
+        from scipy.stats import mannwhitneyu
+        if len(in_lineage) >= 3 and len(out_lineage) >= 3:
+            stat, pval = mannwhitneyu(in_lineage, out_lineage, alternative='less')
+            print(f"Mann-Whitney U (more essential in {lineage}?): p={pval:.2e}")
+            if pval < 0.05 and in_lineage.median() < -0.3:
+                print(f"→ SELECTIVELY ESSENTIAL in {lineage} (good therapeutic target)")
+            elif scores.median() < -0.5:
+                print(f"→ PAN-ESSENTIAL (essential everywhere — high toxicity risk)")
+            else:
+                print(f"→ NOT ESSENTIAL in most lines")
+
+        # --- Top 10 most dependent cell lines ---
+        print(f"\n=== Top 10 most {gene_symbol}-dependent cell lines ===")
+        top10 = scores.nsmallest(10)
+        for model_id, score in top10.items():
+            info = meta_idx.loc[model_id] if model_id in meta_idx.index else {}
+            name = info.get('CellLineName', '?') if isinstance(info, pd.Series) else '?'
+            lin = info.get('OncotreeLineage', '?') if isinstance(info, pd.Series) else '?'
+            print(f"  {name:20s} ({lin:15s}): {score:.3f}")
 ```
 
-This procedure replaces the broken API call and delivers the actual selectivity analysis the skill needs. If DepMap CSV is not available locally, note the gap and rely on literature + gnomAD constraint for scoring.
+**Step 3: Interpret results**
+
+| Metric | Interpretation | Action |
+|--------|---------------|--------|
+| Median < -0.5 in ALL lines | Pan-essential (like ribosomal genes) | Poor drug target — will kill healthy cells too |
+| Median < -0.5 in lineage, > -0.2 in others | **Selectively essential** | Best drug target — therapeutic window exists |
+| Median > -0.2 everywhere | Not essential | Screen hit may be false positive |
+| Mann-Whitney p < 0.05 | Selectivity is statistically significant | Supports lineage-specific dependency |
+| Top-10 list dominated by one lineage | Strong lineage specificity | Validates the screen's cell line context |
+
+**When DepMap files are not available**: Fall back to gnomAD constraint (pLI, LOEUF) + literature search for published CRISPR screen results. Use `PubMed_search_articles(query="[gene] CRISPR screen essential [cancer_type]")` to find published dependency data.
 
 ### Phase 2: Pathway & Network Context
 

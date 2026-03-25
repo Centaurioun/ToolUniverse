@@ -121,6 +121,40 @@ from scipy.stats import mannwhitneyu
 3. **Explain the output** — a code block without interpretation is useless
 4. **Note when external data download is needed** (e.g., DepMap CSV from depmap.org)
 
+### Pattern 15b: Download-and-Process for Datasets Without REST APIs
+
+Many critical scientific datasets have NO REST API but provide bulk download files. Skills should include concrete download-and-process instructions when this is the only path to essential data.
+
+**Template for download-and-process procedures:**
+
+```markdown
+**Step 1: Download data files**
+- URL: [exact download page URL]
+- Files needed: [filename] (~[size]) — [what it contains]
+- Registration: [required/not required]
+- Update frequency: [quarterly/annually/etc.]
+
+**Step 2: Process with Python**
+[Working code with pandas/scipy that loads the CSV and produces the analysis]
+
+**Step 3: Interpret results**
+[Table mapping output values to biological/clinical meaning]
+
+**When files are not available**: [Fallback strategy using API tools]
+```
+
+**Known download-only datasets that skills reference:**
+
+| Dataset | Download URL | Files | Used By |
+|---------|-------------|-------|---------|
+| **DepMap CRISPR** | depmap.org/portal/download/all/ | CRISPRGeneEffect.csv (~300MB), Model.csv (~2MB) | functional-genomics, cell-line-profiling |
+| **TCGA clinical** | portal.gdc.cancer.gov | Clinical + mutation TSVs | cancer-genomics-tcga |
+| **GTEx expression** | gtexportal.org/home/downloads | GTEx_Analysis_v8_Annotations.csv | expression-data-retrieval |
+| **ClinGen gene-disease** | clinicalgenome.org/docs/ | gene_curation_list.tsv | variant-interpretation |
+| **gnomAD constraint** | gnomad.broadinstitute.org/downloads | constraint metrics TSV | functional-genomics |
+
+**Critical rule**: Always include a fallback for when the download is unavailable (user may not have registration, file may be too large, etc.). The fallback should use available API tools even if they provide less complete data.
+
 ## Common Anti-Patterns
 
 | Anti-Pattern | Fix |

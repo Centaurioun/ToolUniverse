@@ -218,31 +218,65 @@ CellMarker_search_by_gene(operation="search_by_gene", gene_symbol="EGFR", specie
 
 **Computational procedure: DepMap dependency from downloaded data**
 
-When the API can't deliver CRISPR scores, download the data directly:
+When the API can't deliver CRISPR scores, download the data directly.
+
+**Download instructions**: Go to https://depmap.org/portal/download/all/ (free registration required). Download:
+- **CRISPRGeneEffect.csv** (~300MB) — Chronos dependency scores per gene per cell line
+- **Model.csv** (~2MB) — Cell line metadata (name, lineage, disease, mutations)
+- **OmicsSomaticMutations.csv** (optional, ~100MB) — Mutation calls per cell line
 
 ```python
 # DepMap CRISPR dependency analysis for cell line selection
+# Requires: pandas (included in ToolUniverse dependencies)
 import pandas as pd
+import os
 
-# Download from https://depmap.org/portal/download/all/
-# File: CRISPRGeneEffect.csv (Chronos scores, ~300MB)
-# File: Model.csv (cell line metadata)
-df = pd.read_csv("CRISPRGeneEffect.csv", index_col=0)
-meta = pd.read_csv("Model.csv")
+# --- Configuration ---
+depmap_dir = "."  # directory with DepMap files
+gene_symbol = "KRAS"  # gene of interest
+lineage = "Pancreas"  # cancer lineage
 
-# Find your gene (e.g., KRAS)
-gene_col = [c for c in df.columns if c.startswith("KRAS ")]
-if gene_col:
-    scores = df[gene_col[0]].dropna()
-    # Merge with cell line metadata
-    merged = pd.DataFrame({'score': scores}).join(
-        meta.set_index('ModelID')[['CellLineName', 'OncotreeLineage', 'OncotreePrimaryDisease']]
-    )
-    # Filter to pancreatic
-    panc = merged[merged['OncotreeLineage'] == 'Pancreas']
-    print(panc.sort_values('score')[['CellLineName', 'score']].head(10))
-    # Most negative score = most KRAS-dependent line
+effect_file = os.path.join(depmap_dir, "CRISPRGeneEffect.csv")
+model_file = os.path.join(depmap_dir, "Model.csv")
+
+if not os.path.exists(effect_file):
+    print(f"Download CRISPRGeneEffect.csv from https://depmap.org/portal/download/all/")
+else:
+    df = pd.read_csv(effect_file, index_col=0)
+    meta = pd.read_csv(model_file)
+
+    # Find gene column (format: "KRAS (3845)")
+    gene_col = [c for c in df.columns if c.startswith(f"{gene_symbol} (")]
+    if gene_col:
+        scores = df[gene_col[0]].dropna()
+
+        # Merge with cell line metadata
+        merged = pd.DataFrame({'score': scores}).join(
+            meta.set_index('ModelID')[['CellLineName', 'OncotreeLineage',
+                                        'OncotreePrimaryDisease', 'OncotreeSubtype']]
+        )
+
+        # Filter to lineage of interest
+        lineage_lines = merged[merged['OncotreeLineage'] == lineage]
+
+        print(f"=== {gene_symbol} dependency in {lineage} cell lines ===")
+        print(f"Total {lineage} lines: {len(lineage_lines)}")
+        print(f"\nMost {gene_symbol}-dependent {lineage} lines:")
+        top = lineage_lines.sort_values('score').head(15)
+        for _, row in top.iterrows():
+            dep = "ESSENTIAL" if row['score'] < -0.5 else "moderate" if row['score'] < -0.2 else "not essential"
+            print(f"  {row['CellLineName']:20s} score={row['score']:.3f}  ({dep})")
+
+        # For cell line selection: most negative = most dependent on this gene
+        # Cross-reference with mutation data to find lines with specific mutations
 ```
+
+**Interpretation**: Most negative Chronos score = most dependent on the gene. For cell line selection:
+- Score < -0.5: The gene is essential in this line (good for studying gene function)
+- Score < -1.0: Strongly essential (comparable to common essential genes)
+- Compare your target lineage vs pan-cancer to assess selectivity
+
+**If DepMap data is unavailable**: Use `cBioPortal_get_mutations(study_id="ccle_broad_2019", gene_list="KRAS")` for mutation data, and rely on the Quick Reference table in this skill for common cell line recommendations.
 
 ---
 
