@@ -114,20 +114,20 @@ jobs:
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
           echo "Publishing version $VERSION to MCP Registry..."
-          if ./mcp-publisher publish 2>&1; then
+          OUTPUT=$(./mcp-publisher publish 2>&1) && {
+            echo "$OUTPUT"
             echo "result=published" >> $GITHUB_OUTPUT
-          else
-            # Check if failure is due to duplicate version (not a real error)
-            REGISTRY_RESPONSE=$(curl -s "https://registry.modelcontextprotocol.io/v0/servers/io.github.mims-harvard/tooluniverse" 2>/dev/null || echo "{}")
-            PUBLISHED_VERSION=$(echo "$REGISTRY_RESPONSE" | jq -r '.version // empty' 2>/dev/null || echo "")
-            if [ "$PUBLISHED_VERSION" = "$VERSION" ]; then
+          } || {
+            echo "$OUTPUT"
+            # Treat duplicate version as success (already published)
+            if echo "$OUTPUT" | grep -q "duplicate version"; then
               echo "Version $VERSION is already published to MCP Registry. Skipping."
               echo "result=already_published" >> $GITHUB_OUTPUT
             else
-              echo "::error::MCP Registry publish failed for version $VERSION (registry has: $PUBLISHED_VERSION)"
+              echo "::error::MCP Registry publish failed for version $VERSION"
               exit 1
             fi
-          fi
+          }
 
       - name: Verify publication
         if: steps.mcp_publish.outputs.result == 'published'
