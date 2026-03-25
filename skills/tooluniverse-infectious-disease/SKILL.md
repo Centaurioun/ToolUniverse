@@ -130,6 +130,7 @@ Classify via NCBI Taxonomy (query param). Identify related pathogens with existi
 | **DNA virus** | Polymerase inhibitors, kinase inhibitors | DNA pol, thymidine kinase | HSV → acyclovir |
 | **Gram-negative bacteria** | Cell wall (beta-lactams), ribosome (aminoglycosides), topoisomerase (fluoroquinolones) | PBPs, 30S/50S ribosome, DNA gyrase | E. coli → meropenem |
 | **Gram-positive bacteria** | Cell wall (vancomycin), ribosome (macrolides), cell membrane (daptomycin) | PBPs, 50S ribosome, membrane | MRSA → vancomycin |
+| **Mycobacteria (acid-fast)** | Cell wall mycolic acid (isoniazid), RNA polymerase (rifampin), ATP synthase (bedaquiline), DNA gyrase (fluoroquinolones) | InhA, RpoB, AtpE, GyrA | M. tuberculosis → HRZE regimen |
 | **Fungal** | Ergosterol (azoles), cell wall (echinocandins), nucleic acid (flucytosine) | Lanosterol demethylase, glucan synthase | Candida → fluconazole |
 | **Parasite** | Variable by species; often metabolic targets | DHFR, proteasome, kinases | Plasmodium → artemisinin |
 

@@ -106,10 +106,10 @@ Phase 6: Integrated Safety Report
   - Input: `drug_name`
   - Output: full warnings text
 - `DailyMed_parse_adverse_reactions` -- adverse reactions from label
-  - Input: `set_id` (from Phase 0 DailyMed search)
+  - Input: `setid` (NOT `set_id`; from Phase 0 DailyMed search)
   - Output: parsed adverse reaction tables and text
 - `DailyMed_parse_drug_interactions` -- drug interaction section
-  - Input: `set_id`
+  - Input: `setid` (NOT `set_id`)
   - Output: parsed interaction data
 
 **Workflow**:

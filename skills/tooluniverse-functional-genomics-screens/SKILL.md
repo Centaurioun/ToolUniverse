@@ -92,9 +92,9 @@ If the user provides a ranked list (e.g., by MAGeCK score or BAGEL BF), preserve
 **Objective**: Assess whether screen hits are genuine essential genes in the relevant context.
 
 **Tools**:
-- `DepMap_get_gene_dependencies` -- get CRISPR dependency scores across cell lines
-  - Input: `gene_name` (gene symbol)
-  - Output: dependency scores per cell line (lower = more essential; < -0.5 typically essential)
+- `DepMap_get_gene_dependencies` -- get gene dependency metadata
+  - Input: `gene_symbol` (gene symbol)
+  - Output: gene metadata (HGNC ID, Ensembl ID). **NOTE: This tool returns gene catalog metadata, NOT per-cell-line CRISPR scores.** Full Chronos dependency data must be obtained from depmap.org directly. As a workaround, use `search_clinical_trials` and `PubMed_search_articles` to find published CRISPR screen data for specific genes.
 - `DepMap_search_cell_lines` -- find cell lines matching criteria
   - Input: `query` (cell line name, lineage, or disease)
   - Output: cell line metadata, lineage, disease
@@ -129,10 +129,10 @@ If the user provides a ranked list (e.g., by MAGeCK score or BAGEL BF), preserve
   - Input: `identifiers` (space-separated gene list as STRING, not array)
   - Output: enriched pathways with p-values, gene counts
 - `STRING_get_network` -- get protein interaction network
-  - Input: `protein_ids` (array of gene names), `species` (9606 for human)
+  - Input: `identifiers` (carriage-return-separated string: `"GENE1\rGENE2\rGENE3"`, NOT an array), `species` (9606 for human)
   - Output: interaction edges with confidence scores
 - `STRING_functional_enrichment` -- GO/KEGG enrichment via STRING
-  - Input: `protein_ids` (array), `species` (9606)
+  - Input: `identifiers` (same format as above), `species` (9606)
   - Output: enriched terms with FDR-corrected p-values
 
 **Workflow**:
@@ -174,7 +174,7 @@ If the user provides a ranked list (e.g., by MAGeCK score or BAGEL BF), preserve
 
 **Tools**:
 - `civic_search_evidence_items` -- search CIViC for clinical evidence
-  - Input: `query` (gene name or variant)
+  - Input: `molecular_profile` (gene name or variant, NOT `query`), optional `therapy`, `disease`
   - Output: evidence items with clinical significance, disease, drugs
 - `COSMIC_get_mutations_by_gene` -- get somatic mutation data
   - Input: `gene_name`

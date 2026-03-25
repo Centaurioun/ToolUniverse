@@ -74,21 +74,21 @@ for target in rows[:5]:
 - `UniProt_get_entry_by_accession` - Protein details
 
 **Drug Discovery**:
-- `drugbank_get_drug_name_and_description_by_target_name` - Drugs by target
-- `drugbank_get_drug_name_and_description_by_indication` - Drugs by indication
-- `DGIdb_get_drug_gene_interactions` - Drug-gene interactions
+- `drugbank_get_drug_name_and_description_by_target_name` - Drugs by target. **Param: `query=` (NOT `target_name=`)**
+- `drugbank_get_drug_name_and_description_by_indication` - Drugs by indication. **Param: `query=` (NOT `indication=`)**
+- `DGIdb_get_drug_gene_interactions` - Drug-gene interactions. Response path: `data.data.genes.nodes[0].interactions`
 - `ChEMBL_search_drugs` / `ChEMBL_get_drug_mechanisms` - Drug search and MOA
 
-**Drug Information**:
-- `drugbank_get_drug_basic_info_by_drug_name_or_id` - Basic info
-- `drugbank_get_indications_by_drug_name_or_drugbank_id` - Approved indications
-- `drugbank_get_pharmacology_by_drug_name_or_drugbank_id` - Pharmacology
-- `drugbank_get_targets_by_drug_name_or_drugbank_id` - Drug targets
+**Drug Information** (ALL DrugBank tools use `query=` as the search parameter, plus `case_sensitive=False`, `exact_match=False`, `limit=N`):
+- `drugbank_get_drug_basic_info_by_drug_name_or_id` - Basic info. **Param: `query="drug_name"`**
+- `drugbank_get_indications_by_drug_name_or_drugbank_id` - Approved indications. **Param: `query="drug_name"`**
+- `drugbank_get_pharmacology_by_drug_name_or_drugbank_id` - Pharmacology. **Param: `query="drug_name"`**
+- `drugbank_get_targets_by_drug_name_or_drugbank_id` - Drug targets. **Param: `query="drug_name"`**
 
 **Safety**:
 - `FDA_get_warnings_and_cautions_by_drug_name` - FDA warnings
-- `FAERS_search_reports_by_drug_and_reaction` - Adverse events
-- `FAERS_count_death_related_by_drug` - Serious outcomes
+- `FAERS_search_reports_by_drug_and_reaction` - Adverse events. **Param: `medicinalproduct=` (NOT `drug_name=`)**
+- `FAERS_count_death_related_by_drug` - Serious outcomes. **Param: `medicinalproduct=` (NOT `drug_name=`)**
 - `drugbank_get_drug_interactions_by_drug_name_or_id` - Interactions
 
 **Property Prediction**:
