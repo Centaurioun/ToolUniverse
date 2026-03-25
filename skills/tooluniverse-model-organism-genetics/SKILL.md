@@ -371,7 +371,7 @@ Link model organism findings back to human disease.
 
 | Tool | Parameter | Notes |
 |------|-----------|-------|
-| `EnsemblCompara_get_orthologues` | `gene` (Ensembl ID), `species`, `target_species` | Primary. Use species names: "mouse", "zebrafish", "fruitfly", "caenorhabditis_elegans", "saccharomyces_cerevisiae", "xenopus_tropicalis" |
+| `EnsemblCompara_get_orthologues` | `gene` (Ensembl ID), `species`, `target_species` | Primary. Use species names: "mouse", "zebrafish", "drosophila_melanogaster" (NOT "fruitfly"), "caenorhabditis_elegans", "saccharomyces_cerevisiae", "xenopus_tropicalis" |
 | `PANTHER_ortholog` | `gene_id` (symbol), `organism` (taxon), `target_organism` (taxon) | Fallback. Taxon: 9606/10090/7227/6239/7955/559292/8364 |
 | `NCBIDatasets_get_orthologs` | `gene_id` (Entrez ID) | Broad, all species at once |
 

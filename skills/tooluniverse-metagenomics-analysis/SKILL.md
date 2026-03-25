@@ -179,23 +179,23 @@ If the query is ambiguous, clarify before proceeding. A species name might match
   - Input: `accession` (analysis ID)
   - Output: GO terms with counts
 - `kegg_search_pathway` -- search KEGG pathways by keyword
-  - Input: `query` (e.g., "butyrate metabolism", "lipopolysaccharide biosynthesis")
+  - Input: `keyword` (NOT `query`; e.g., "butyrate", "lipopolysaccharide")
   - Output: pathway IDs, names, descriptions
 - `KEGG_get_pathway_genes` -- get genes in a KEGG pathway
-  - Input: `pathway_id` (e.g., "map00650" for butanoate metabolism)
+  - Input: `pathway_id` (e.g., "hsa00650" for human butanoate metabolism; use organism prefix like `hsa`, `ko`, or `eco`, NOT bare `map00650`)
   - Output: gene list with functions
-- `kegg_get_entry` -- get detailed KEGG entry (pathway, module, compound)
-  - Input: `entry_id` (e.g., "map00650", "M00357")
-  - Output: entry details, linked pathways, reactions
+- `kegg_get_pathway_info` -- get pathway details
+  - Input: `pathway_id` (e.g., "hsa00650")
+  - Output: pathway name, description, linked modules
 
 **Workflow**:
 1. For studies from Phase 1, retrieve their analyses via `MGnify_search_analyses`
 2. Get GO terms and taxonomic profiles from analyses
 3. **Interpret GO terms**: Group by biological process (metabolism, transport, virulence, stress response). Identify which functions are enriched in the study context.
 4. **Map to KEGG pathways**: For key functional categories, search KEGG pathways. For example:
-   - Short-chain fatty acid production: `kegg_search_pathway(query="butanoate metabolism")` → map00650
-   - LPS biosynthesis (inflammation): `kegg_search_pathway(query="lipopolysaccharide")` → map00540
-   - Amino acid metabolism: relevant pathways for tryptophan (map00380), bile acid (map00120)
+   - Short-chain fatty acid production: `kegg_search_pathway(keyword="butanoate")` → hsa00650
+   - LPS biosynthesis (inflammation): `kegg_search_pathway(keyword="lipopolysaccharide")` → hsa00540
+   - Amino acid metabolism: relevant pathways for tryptophan (hsa00380), bile acid (hsa00120)
 5. **Connect function to biology**: Don't just list GO terms. Explain what the functional profile means:
    - Are butyrate producers enriched/depleted? (Relevant to gut barrier integrity)
    - Is LPS biosynthesis capacity high? (Relevant to inflammation)
@@ -254,9 +254,9 @@ This phase is critical -- it transforms data collection into scientific interpre
   - Useful for recent/European studies not yet in PubMed
 - `DisGeNET_search_gene` -- gene-disease associations (for microbial gene products affecting host)
   - Input: `query` (gene symbol)
-- `CTD_get_gene_disease_associations` -- chemical/gene-disease relationships
-  - Input: `gene_symbol` or `disease_name`
-  - Useful for: metabolite-disease links (e.g., butyrate → IBD, TMAO → cardiovascular)
+- `CTD_get_gene_diseases` -- gene-disease associations from CTD
+  - Input: `input_terms` (gene symbol or NCBI Gene ID, e.g., "IL10")
+  - Useful for: connecting microbial-influenced host genes to disease
 
 **Workflow**:
 1. For each key taxon-disease association from Phase 5, search PubMed for published evidence
