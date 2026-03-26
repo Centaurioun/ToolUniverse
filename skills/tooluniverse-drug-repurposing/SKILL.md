@@ -74,30 +74,30 @@ for target in rows[:5]:
 - `UniProt_get_entry_by_accession` - Protein details
 
 **Drug Discovery**:
-- `drugbank_get_drug_name_and_description_by_target_name` - Drugs by target
-- `drugbank_get_drug_name_and_description_by_indication` - Drugs by indication
-- `DGIdb_get_drug_gene_interactions` - Drug-gene interactions
+- `drugbank_get_drug_name_and_description_by_target_name` - Drugs by target. **Param: `query=` (NOT `target_name=`)**
+- `drugbank_get_drug_name_and_description_by_indication` - Drugs by indication. **Param: `query=` (NOT `indication=`)**
+- `DGIdb_get_drug_gene_interactions` - Drug-gene interactions. Response path: `data.data.genes.nodes[0].interactions`
 - `ChEMBL_search_drugs` / `ChEMBL_get_drug_mechanisms` - Drug search and MOA
 
-**Drug Information**:
-- `drugbank_get_drug_basic_info_by_drug_name_or_id` - Basic info
-- `drugbank_get_indications_by_drug_name_or_drugbank_id` - Approved indications
-- `drugbank_get_pharmacology_by_drug_name_or_drugbank_id` - Pharmacology
-- `drugbank_get_targets_by_drug_name_or_drugbank_id` - Drug targets
+**Drug Information** (ALL DrugBank tools use `query=` as the search parameter, plus `case_sensitive=False`, `exact_match=False`, `limit=N`):
+- `drugbank_get_drug_basic_info_by_drug_name_or_id` - Basic info. **Param: `query="drug_name"`**
+- `drugbank_get_indications_by_drug_name_or_drugbank_id` - Approved indications. **Param: `query="drug_name"`**
+- `drugbank_get_pharmacology_by_drug_name_or_drugbank_id` - Pharmacology. **Param: `query="drug_name"`**
+- `drugbank_get_targets_by_drug_name_or_drugbank_id` - Drug targets. **Param: `query="drug_name"`**
 
 **Safety**:
 - `FDA_get_warnings_and_cautions_by_drug_name` - FDA warnings
-- `FAERS_search_reports_by_drug_and_reaction` - Adverse events
-- `FAERS_count_death_related_by_drug` - Serious outcomes
+- `FAERS_search_reports_by_drug_and_reaction` - Adverse events. **Param: `medicinalproduct=` (NOT `drug_name=`)**
+- `FAERS_count_death_related_by_drug` - Serious outcomes. **Param: `medicinalproduct=` (NOT `drug_name=`)**
 - `drugbank_get_drug_interactions_by_drug_name_or_id` - Interactions
 
 **Property Prediction**:
 - `ADMETAI_predict_physicochemical_properties` / `ADMETAI_predict_toxicity` - ADMET and toxicity
 
 **Pathway & Network Analysis**:
-- `ReactomeAnalysis_pathway_enrichment` - Pathway enrichment for target gene sets
-- `STRING_get_network` - Protein interaction networks for target validation
-- `CTD_get_gene_diseases` - Curated gene-disease associations
+- `ReactomeAnalysis_pathway_enrichment` - Pathway enrichment. **Param: `identifiers="SOD1\nTARDBP\nFUS"` (newline-separated string, NOT array)**
+- `STRING_get_network` - Protein interaction networks. **Param: `identifiers="SOD1\rTARDBP\rFUS"` (CR-separated string), `species=9606`**
+- `CTD_get_gene_diseases` - Curated gene-disease associations. **Param: `input_terms="gene_symbol"` (NOT `gene_symbol=`)**
 
 **Literature & Clinical Trials**:
 - `PubMed_search_articles` / `EuropePMC_search_articles` - Literature search
@@ -107,25 +107,109 @@ for target in rows[:5]:
 
 ---
 
-## Scoring Criteria
+## Scoring & Decision Framework
 
-| Category | Points | Breakdown |
+### Repurposing Viability Score (0-100)
+
+| Category | Points | How to Score |
 |----------|--------|-----------|
-| **Target Association** | 0-40 | Strong genetic: 40, Moderate: 25, Pathway-level: 15, Weak: 5 |
-| **Safety Profile** | 0-30 | FDA approved: 20, Phase III: 15, Phase II: 10, No black box: +10 |
-| **Literature Evidence** | 0-20 | Clinical trials: 5 each (max 15), Preclinical: 1 each (max 10) |
-| **Drug Properties** | 0-10 | High bioavailability: 5, BBB penetration (CNS): 5, Low toxicity: 5 |
+| **Target Association** | 0-40 | **40**: Target has genetic evidence in disease (GWAS, rare variants); **25**: Target is in a disease-associated pathway (Reactome, KEGG); **15**: Target is differentially expressed in disease tissue; **5**: Target shares a GO term with disease genes |
+| **Safety Profile** | 0-30 | **30**: FDA-approved drug, no black box warning, established safety record; **20**: FDA-approved with manageable warnings; **10**: Phase II+ data, acceptable safety; **0**: Preclinical only or serious safety signals |
+| **Literature Evidence** | 0-20 | **20**: Phase II+ trial for the new indication exists; **15**: Case reports or retrospective studies show efficacy; **10**: Preclinical in-vivo evidence (animal models); **5**: In-vitro evidence only; **0**: No prior evidence |
+| **Drug Properties** | 0-10 | **10**: Oral, good bioavailability, IP available; **5**: Injectable or narrow therapeutic window; **0**: Poor PK or formulation challenges |
+
+**Classification**:
+- **80-100**: Strong candidate — proceed to clinical evaluation
+- **60-79**: Promising — worth preclinical validation or retrospective study
+- **40-59**: Speculative — needs significant additional evidence
+- **<40**: Weak — likely not worth pursuing without new mechanistic insight
+
+### Evidence Grading for Repurposing
+
+| Grade | Definition | Action |
+|-------|-----------|--------|
+| **E1 (Clinical)** | Existing clinical trial for new indication (any phase) | High priority — check trial results |
+| **E2 (Epidemiological)** | Retrospective/observational data showing benefit | Moderate priority — design prospective study |
+| **E3 (Preclinical)** | Animal model evidence for new indication | Standard priority — validate mechanism |
+| **E4 (Computational)** | Target overlap, network proximity, or molecular similarity only | Low priority — needs experimental validation |
+
+### How to Interpret and Combine Results
+
+After running Phases 1-4, synthesize by answering:
+
+1. **Is the target validated for this disease?** Check OpenTargets association score (>0.5 = strong). Cross-reference with genetic evidence (GWAS hits, rare variant studies). If target association is only pathway-level, the repurposing hypothesis is speculative.
+
+2. **Does the drug actually hit the target at achievable doses?** Check ChEMBL IC50/Ki values. If the drug's affinity for the new target is >10x weaker than for its original target, clinical efficacy is unlikely at safe doses.
+
+3. **What's the safety margin?** Compare the dose needed for the new indication to the approved dose. If higher doses are needed, safety data from the original indication may not apply.
+
+4. **Is there prior clinical evidence?** A Phase II trial for the new indication (even failed) is more informative than 100 computational predictions. Check `search_clinical_trials` first.
+
+5. **What's the competitive landscape?** If better drugs already exist for the disease, repurposing offers little value. Check DrugBank indications for approved therapies.
 
 ---
 
 ## Best Practices
 
-1. **Start broad**: Query multiple databases (DrugBank, ChEMBL, DGIdb)
-2. **Validate targets**: Confirm target-disease associations in OpenTargets
+1. **Check clinical trials FIRST**: `search_clinical_trials(condition="[disease]", intervention="[drug]")` — if a trial already exists, start there
+2. **Validate targets with genetics**: Genetic evidence (GWAS, rare variants) is the strongest predictor of successful drug development
 3. **Safety first**: Prioritize approved drugs with known safety profiles
-4. **Literature mining**: Search for existing clinical/preclinical evidence
-5. **Consider mechanism**: Evaluate biological plausibility
-6. **Batch operations**: Use `tu.run_batch()` for parallel queries
+4. **Dose matters**: A drug that hits a disease target at 100x its approved dose is not a repurposing candidate
+5. **Mechanism over correlation**: Network proximity alone is insufficient — explain WHY the drug should work
+6. **Consider IP and formulation**: Generic drugs are easier to repurpose but harder to fund trials for
+
+### Computational Procedure: Drug-Target Dose Feasibility Check
+
+A drug that hits a new target only at 100x its approved dose is NOT a viable repurposing candidate. Use this procedure after identifying drug-target pairs:
+
+```python
+# Drug-target dose feasibility analysis
+# Uses ChEMBL bioactivity data from ToolUniverse
+from tooluniverse import ToolUniverse
+
+tu = ToolUniverse()
+tu.load_tools()
+
+def check_dose_feasibility(drug_name, original_target, new_target):
+    """
+    Compare drug's potency at original vs new target.
+    If new_target IC50 > 10x original_target IC50, flag as unlikely feasible.
+    """
+    # Get bioactivity for original target
+    orig = tu.run_one_function({
+        'name': 'ChEMBL_get_bioactivities',
+        'arguments': {
+            'molecule_chembl_id': drug_name,  # or search first
+            'target_chembl_id': original_target,
+            'limit': 10
+        }
+    })
+
+    # Get bioactivity for new target
+    new = tu.run_one_function({
+        'name': 'ChEMBL_get_bioactivities',
+        'arguments': {
+            'molecule_chembl_id': drug_name,
+            'target_chembl_id': new_target,
+            'limit': 10
+        }
+    })
+
+    # Extract IC50/Ki values and compare
+    # If new target requires >10x concentration → NOT FEASIBLE at safe doses
+    # If new target is within 3x → PROMISING
+    # If new target is within 1x → STRONG candidate
+    pass  # Parse actual values from results
+
+# Alternative: Quick Cmax check
+# If published Cmax at approved dose < IC50 for new target → NOT FEASIBLE
+# Cmax data can be found in:
+#   - DrugBank pharmacology section
+#   - DailyMed clinical pharmacology section
+#   - PubMed PK studies
+```
+
+**Key principle**: The most common reason repurposing fails is insufficient drug exposure at the new target. Always check whether the drug's concentration at approved doses reaches the IC50 for the new target.
 
 ---
 

@@ -77,13 +77,13 @@ Phase 3: Structure Analysis
     |- Binding pocket analysis
     +- Key interactions
     |
-Phase 3.5: Docking Validation (NvidiaNIM_diffdock/boltz2)
+Phase 3.5: Docking Validation (get_diffdock_info/boltz2)
     |- Dock reference inhibitor
     +- Validate binding pocket geometry
     |
 Phase 4: Compound Expansion
     |- 4.1-4.3 Similarity/substructure search
-    +- 4.4 De novo generation (NvidiaNIM_genmol/molmim)
+    +- 4.4 De novo generation (NvidiaNIM_genmol/NvidiaNIM_molmim)
     |
 Phase 5: ADMET Filtering
     |- Physicochemical properties (Lipinski, QED)
@@ -91,7 +91,7 @@ Phase 5: ADMET Filtering
     +- Structural alerts (PAINS)
     |
 Phase 6: Candidate Docking & Prioritization
-    |- Dock all candidates (NvidiaNIM_diffdock/boltz2)
+    |- Dock all candidates (get_diffdock_info/boltz2)
     |- Score by docking (40%) + ADMET (30%) + similarity (20%) + novelty (10%)
     |- Assess synthesis feasibility
     +- Generate final ranked list (top 20)
@@ -163,7 +163,7 @@ Use multi-source triangulation:
 
 Requires `NVIDIA_API_KEY`. Two options:
 - **AlphaFold2**: `NvidiaNIM_alphafold2(sequence, algorithm="mmseqs2")` - high accuracy, 5-15 min
-- **ESMFold**: `NvidiaNIM_esmfold(sequence)` - fast (~30s), max 1024 AA
+- **ESMFold**: `ESMFold_predict_structure(sequence)` - fast (~30s), max 1024 AA
 
 Always report pLDDT confidence scores (>=90 very high, 70-90 confident, <70 caution).
 
@@ -206,7 +206,7 @@ Always report pLDDT confidence scores (>=90 very high, 70-90 confident, <70 caut
 
 | Situation | Tool | Input |
 |-----------|------|-------|
-| Have PDB + SDF | `NvidiaNIM_diffdock` | protein=PDB, ligand=SDF, num_poses=10 |
+| Have PDB + SDF | `get_diffdock_info` | protein=PDB, ligand=SDF, num_poses=10 |
 | Have sequence + SMILES | `NvidiaNIM_boltz2` | polymers=[...], ligands=[...] |
 
 Dock a known reference inhibitor first to validate the binding pocket.
@@ -261,7 +261,7 @@ Include a filter funnel table in the report showing pass/fail counts at each sta
 
 | Dimension | Weight | Source |
 |-----------|--------|--------|
-| Docking confidence | 40% | NvidiaNIM_diffdock/boltz2 |
+| Docking confidence | 40% | get_diffdock_info/boltz2 |
 | ADMET score | 30% | ADMETAI predictions |
 | Similarity to known active | 20% | Tanimoto coefficient |
 | Novelty | 10% | Not in ChEMBL + novel scaffold bonus |
@@ -297,7 +297,7 @@ Druggability:  OpenTargets tractability -> DGIdb druggability -> target class pr
 Bioactivity:   ChEMBL -> BindingDB -> GtoPdb -> PubChem BioAssay -> "No data"
 Structure:     PDB -> EMDB (membrane) -> NvidiaNIM_alphafold2 -> NvidiaNIM_esmfold -> AlphaFold DB -> "None"
 Similarity:    ChEMBL similar -> PubChem similar -> "Search failed"
-Docking:       NvidiaNIM_diffdock -> NvidiaNIM_boltz2 -> similarity-based scoring
+Docking:       get_diffdock_info -> NvidiaNIM_boltz2 -> similarity-based scoring
 Generation:    NvidiaNIM_genmol -> NvidiaNIM_molmim -> similarity search only
 Literature:    PubMed -> EuropePMC (preprints) -> OpenAlex
 GPCR data:     GPCRdb_get_protein -> GtoPdb_get_targets
@@ -310,8 +310,8 @@ GPCR data:     GPCRdb_get_protein -> GtoPdb_get_targets
 | Tool | Runtime | Notes |
 |------|---------|-------|
 | `NvidiaNIM_alphafold2` | 5-15 min | Async, max ~2000 AA |
-| `NvidiaNIM_esmfold` | ~30 sec | Max 1024 AA |
-| `NvidiaNIM_diffdock` | ~1-2 min | Per ligand |
+| `ESMFold_predict_structure` | ~30 sec | Max 1024 AA |
+| `get_diffdock_info` | ~1-2 min | Per ligand |
 | `NvidiaNIM_boltz2` | ~2-5 min | End-to-end complex |
 | `NvidiaNIM_genmol` | ~1-3 min | Depends on num_molecules |
 | `NvidiaNIM_molmim` | ~1-2 min | Close analog generation |

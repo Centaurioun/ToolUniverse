@@ -70,7 +70,7 @@ Every design MUST include: Sequence, Length, Target, Method, and Quality Metrics
 |------|---------|---------------|
 | `NvidiaNIM_rfdiffusion` | Backbone generation | `diffusion_steps` (NOT `num_steps`) |
 | `NvidiaNIM_proteinmpnn` | Sequence design | `pdb_string` (NOT `pdb`) |
-| `NvidiaNIM_esmfold` | Fast validation | `sequence` (NOT `seq`) |
+| `ESMFold_predict_structure` | Fast validation | `sequence` (NOT `seq`) |
 | `NvidiaNIM_alphafold2` | High-accuracy validation | `sequence`, `algorithm` |
 | `NvidiaNIM_esm2_650m` | Sequence embeddings | `sequences`, `format` |
 
@@ -80,7 +80,7 @@ Every design MUST include: Sequence, Length, Target, Method, and Quality Metrics
 |------|-------|---------|
 | `NvidiaNIM_rfdiffusion` | `num_steps=50` | `diffusion_steps=50` |
 | `NvidiaNIM_proteinmpnn` | `pdb=content` | `pdb_string=content` |
-| `NvidiaNIM_esmfold` | `seq="MVLS..."` | `sequence="MVLS..."` |
+| `ESMFold_predict_structure` | `seq="MVLS..."` | `sequence="MVLS..."` |
 | `NvidiaNIM_alphafold2` | `seq="MVLS..."` | `sequence="MVLS..."` |
 
 ### NVIDIA NIM Requirements
@@ -99,7 +99,7 @@ Every design MUST include: Sequence, Length, Target, Method, and Quality Metrics
 | `alphafold_get_prediction` | Get AlphaFold DB structure | `accession` |
 | `emdb_search` | Search cryo-EM maps | `query` |
 | `emdb_get_entry` | Get entry details | `entry_id` |
-| `UniProt_get_protein_sequence` | Get target sequence | `accession` |
+| `UniProt_get_entry_by_accession` | Get target sequence | `accession` |
 | `InterPro_get_protein_domains` | Get domains | `accession` |
 
 ---
