@@ -54,6 +54,11 @@ To install graph visualization dependencies:
 Or install all optional dependencies:
     pip install tooluniverse[all]
 
+On Windows, `pygraphviz` is not installed by default because it requires the
+native Graphviz SDK. If you need Graphviz-backed layouts or exports, install it
+separately first, then rerun the install:
+    winget install Graphviz.Graphviz
+
 Alternatively, use --export-image to create a static visualization.
 """
 
@@ -659,6 +664,9 @@ To install graph visualization dependencies:
 
 Or install manually:
     pip install matplotlib networkx
+
+If you need Graphviz-backed rendering on Windows, install Graphviz first:
+    winget install Graphviz.Graphviz
 """
         raise ImportError(error_msg)
 

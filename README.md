@@ -48,6 +48,14 @@ npx skills add mims-harvard/ToolUniverse
 uv pip install tooluniverse
 ```
 
+If you want the `graph` extra on Windows, `pygraphviz` is skipped by default because it requires the native Graphviz headers and libraries. The pure-Python graph tooling still installs, and you can add Graphviz separately if you need the full feature set.
+
+```bash
+uv sync --all-extras
+# or, if you specifically need Graphviz-backed rendering on Windows:
+# winget install Graphviz.Graphviz
+```
+
 **[`tu` CLI](https://zitniklab.hms.harvard.edu/ToolUniverse/guide/tu_cli.html)** — discover, inspect, run, and test tools from the terminal.
 **[Python SDK](https://zitniklab.hms.harvard.edu/ToolUniverse/guide/python_guide.html)** — programmatic access for building AI scientist systems.
 
