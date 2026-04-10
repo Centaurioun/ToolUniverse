@@ -1,0 +1,42 @@
+{
+  "name": "tooluniverse",
+  "version": "1.1.11",
+  "description": "Repo-local Codex plugin for ToolUniverse scientific MCP workflows.",
+  "author": {
+    "name": "MIMS Harvard",
+    "email": "shanghuagao@gmail.com",
+    "url": "https://aiscientist.tools"
+  },
+  "homepage": "https://aiscientist.tools",
+  "repository": "https://github.com/mims-harvard/ToolUniverse",
+  "license": "MIT",
+  "keywords": [
+    "tooluniverse",
+    "science",
+    "bioinformatics",
+    "mcp",
+    "codex"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "ToolUniverse",
+    "shortDescription": "Scientific MCP tools for Codex",
+    "longDescription": "Repo-local Codex plugin that wraps the existing ToolUniverse MCP runtime while keeping the Claude MCPB release path separate.",
+    "developerName": "MIMS Harvard",
+    "category": "Research",
+    "composerIcon": "./assets/tooluniverse-logo.png",
+    "logo": "./assets/tooluniverse-logo.png",
+    "capabilities": [
+      "Read",
+      "Search"
+    ],
+    "websiteURL": "https://aiscientist.tools",
+    "defaultPrompt": [
+      "Use ToolUniverse to find the right scientific database tool for my question.",
+      "Use ToolUniverse to search literature and summarize the evidence.",
+      "Use ToolUniverse to inspect available biomedical tools before execution."
+    ],
+    "brandColor": "#0F766E"
+  }
+}

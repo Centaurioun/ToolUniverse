@@ -9,3 +9,5 @@ To set up ToolUniverse, open Claude Desktop and run:
 .. code-block:: text
 
    Read https://aiscientist.tools/setup.md and set up ToolUniverse for me.
+
+If you are building from source, generate the MCPB first with ``python scripts/build_mcpb.py`` and install ``dist/mcpb/tooluniverse/tooluniverse.mcpb``.

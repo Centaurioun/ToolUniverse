@@ -1,0 +1,6 @@
+interface:
+  display_name: "ToolUniverse Research Intake"
+  short_description: "Route biomedical requests into ToolUniverse"
+  default_prompt: "Use $tooluniverse-research-intake to decide whether this request should enter the ToolUniverse plugin workflow."
+policy:
+  allow_implicit_invocation: false

@@ -174,3 +174,6 @@ DEVTU_*.md
 # Claude Code configuration
 .claude/
 .tooluniverse/
+
+# Temporary MCPB workspace and scratch artifacts
+tooluniverse-mcpb/

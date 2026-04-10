@@ -1,0 +1,6 @@
+interface:
+  display_name: "ToolUniverse Codex Plugin"
+  short_description: "Implement this repo's Codex plugin packaging"
+  default_prompt: "Use $tooluniverse-codex-plugin to implement the next verified step of the ToolUniverse Codex plugin plan."
+policy:
+  allow_implicit_invocation: false
