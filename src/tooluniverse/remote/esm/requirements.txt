@@ -1,5 +1,7 @@
 fastmcp>=0.4.0
-esm>=2.0.0
-torch>=2.0.0
+esm>=2.0.0; python_version < "3.13"
+# PyTorch wheels are not available for every Python/platform combo.
+# Skip the optional ESM stack on Python 3.13 so the base ToolUniverse venv can still be created.
+torch>=2.0.0; python_version < "3.13"
 numpy>=1.24.0
 scipy>=1.11.0

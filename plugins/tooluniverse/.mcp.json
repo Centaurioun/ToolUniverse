@@ -1,0 +1,37 @@
+{
+  "mcpServers": {
+    "tooluniverse": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "tooluniverse",
+        "tooluniverse-smcp-stdio",
+        "--compact-mode"
+      ],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      },
+      "env_vars": [
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "GEMINI_API_KEY",
+        "OPENROUTER_API_KEY",
+        "AZURE_OPENAI_API_KEY",
+        "HF_TOKEN",
+        "NCBI_API_KEY",
+        "SEMANTIC_SCHOLAR_API_KEY",
+        "BIOGRID_API_KEY",
+        "DISGENET_API_KEY",
+        "OMIM_API_KEY",
+        "ONCOKB_API_TOKEN",
+        "NVIDIA_API_KEY",
+        "USPTO_API_KEY",
+        "UMLS_API_KEY",
+        "BRENDA_EMAIL",
+        "BRENDA_PASSWORD"
+      ],
+      "startup_timeout_sec": 20,
+      "tool_timeout_sec": 120
+    }
+  }
+}

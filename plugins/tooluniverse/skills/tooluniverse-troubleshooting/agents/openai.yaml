@@ -1,0 +1,6 @@
+interface:
+  display_name: "ToolUniverse Troubleshooting"
+  short_description: "Troubleshoot the ToolUniverse plugin workflow"
+  default_prompt: "Use $tooluniverse-troubleshooting to diagnose the ToolUniverse plugin workflow before changing code."
+policy:
+  allow_implicit_invocation: false

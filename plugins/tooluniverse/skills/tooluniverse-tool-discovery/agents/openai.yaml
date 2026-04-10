@@ -1,0 +1,6 @@
+interface:
+  display_name: "ToolUniverse Tool Discovery"
+  short_description: "Search, inspect, then execute ToolUniverse tools"
+  default_prompt: "Use $tooluniverse-tool-discovery to choose the right ToolUniverse tool before execution."
+policy:
+  allow_implicit_invocation: false

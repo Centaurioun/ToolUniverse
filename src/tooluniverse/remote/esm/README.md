@@ -9,8 +9,10 @@ The [ESM Cambrian (ESMC)](https://github.com/evolutionaryscale/esm) tool from Ev
 ### Step 1: Install and Start the ESM Server
 
 **Prerequisites:**
-- Python 3.10+
+- Python 3.10-3.12
 - Sufficient disk space for model weights
+
+Python 3.13 is not currently supported for the local ESM environment because the PyTorch dependency is not reliably resolvable there in the default bootstrap path.
 
 **Installation:**
 

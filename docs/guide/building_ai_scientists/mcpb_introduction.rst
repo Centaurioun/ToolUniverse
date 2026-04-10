@@ -4,7 +4,7 @@ MCP Bundle
 What is MCPB?
 -------------
 
-The **Model Context Protocol Bundle (MCPB)** is a standardized packaging format designed to simplify the distribution and usage of Model Context Protocol (MCP) servers. For **ToolUniverse**, the MCPB wraps the entire ecosystem—including Python dependencies, the Node.js bridge, and the server logic—into a single, standalone executable or bundle.
+The **Model Context Protocol Bundle (MCPB)** is a standardized packaging format designed to simplify the distribution and usage of Model Context Protocol (MCP) servers. For **ToolUniverse**, the MCPB wraps the server logic, Python dependencies, and stdio entrypoint into a single bundle archive.
 
 Why use MCPB with ToolUniverse?
 -------------------------------
@@ -27,7 +27,17 @@ Key Features
 Getting Started
 ---------------
 
-To use the ToolUniverse MCPB:
+To build the ToolUniverse MCPB from this repository:
+
+1.  Run:
+
+    .. code-block:: text
+
+       python scripts/build_mcpb.py
+
+2.  Open the generated archive at ``dist/mcpb/tooluniverse/tooluniverse.mcpb`` in Claude Desktop, or unpack it with ``mcpb unpack`` for inspection.
+
+To use a published ToolUniverse MCPB:
 
 1.  Download the latest release from our `GitHub Releases <https://github.com/mims-harvard/ToolUniverse/releases/tag/mcpb>`_.
 2.  Follow the instructions in the `official Claude Desktop Guide <https://www.anthropic.com/engineering/desktop-extensions>`_ to configure it with your client.
